@@ -121,14 +121,14 @@ public class TaskManager {
 		
 		int y1 = 1;
 		var font = Minecraft.getInstance().font;
-		int indw = font.width("---");
+		int indw = font.width("--");
 		
 		for (var msg : activeTask.get().debug()) {
 			int x1 = 1 + msg.indentation() * indw;
 			int x2 = font.width(msg.line()) + x1 + 2;
 			int y2 = y1 + font.lineHeight;
 			ForgeIngameGui.fill(pStack, x1, y1, x2, y2, 0x90505050);
-			font.draw(pStack, msg.line(), x1 + 1, y1 + 1, msg.active() ? 0xE0E0E0 : 0x808080);
+			font.draw(pStack, msg.line(), x1 + 1, y1 + 1, msg.active() ? 0xE0E0E0 : 0xB0B0B0);
 			y1 += font.lineHeight;
 		}
 	}

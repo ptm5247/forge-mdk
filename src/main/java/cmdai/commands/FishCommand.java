@@ -1,6 +1,7 @@
 package cmdai.commands;
 
 import static cmdai.task.Task.*;
+import static cmdai.task.Inputs.*;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -17,6 +18,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
+import cmdai.Main;
 import cmdai.ModException;
 
 public class FishCommand extends Command {
@@ -57,13 +59,23 @@ public class FishCommand extends Command {
 	
 	private FishCommand() {
 		setTask(compile("Fish",
-			$(this::equipBestFishingRod),
+	
+			$(this::equipBestFishingRod)					.comment("equip best fishing rod"),
 			FORK("move"),
 			
 			LABEL("fish"),
+	T(1),		GOTO("stop", this::toolWillBreak)			.comment("STOP IF tool will break"),
+				AFTER(20, click(USE))						.comment("cast line"),
+				TRY(600, $(this::isBiting, click(USE))		.comment("reel IF biting")),
+	T(-1),	LOOP("fish"),
 			
-			LABEL("stop"),
-			STOP()
+			LABEL("move"),
+	T(1),		AFTER(12000, press(DOWN))					.comment("press DOWN"),
+				WATCH(Main::pbpos, release(DOWN))			.comment("release DOWN"),
+				$(press(UP))								.comment("press UP"),
+				WATCH(Main::pbpos, release(UP))				.comment("release UP"),
+	T(-1),	LOOP("move")
+	
 		));
 	}
 	

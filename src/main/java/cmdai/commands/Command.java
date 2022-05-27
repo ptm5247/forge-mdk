@@ -16,6 +16,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
+import net.minecraftforge.event.TickEvent.PlayerTickEvent;
+
 import cmdai.task.Task;
 import cmdai.task.TaskManager;
 
@@ -37,7 +39,12 @@ abstract class Command implements com.mojang.brigadier.Command<CommandSourceStac
 	@Override
 	public int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		this.minecraft = Minecraft.getInstance();
-		this.player = context.getSource().getPlayerOrException();
+		try {
+			// cannot use getPlayerOrException because it looks for a ServerPlayer
+			this.player = (Player) context.getSource().getEntityOrException();
+		} catch (ClassCastException e) {
+			throw CommandSourceStack.ERROR_NOT_PLAYER.create();
+		}
 		performChecks(context);
 		TaskManager.start(task);
 		
@@ -88,6 +95,16 @@ abstract class Command implements com.mojang.brigadier.Command<CommandSourceStac
 		else 
 			minecraft.getConnection().send(new ServerboundPlayerActionPacket(
 					Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
+	}
+	
+	/** 
+	 * Stops at durability 2 since the check may occur before the last durability reduction has
+	 * been applied, depending on the structure of the task. This also assumes that the next action
+	 * will not use more than 1 durability.
+	 */
+	protected boolean toolWillBreak(PlayerTickEvent event) {
+		var tool = event.player.getMainHandItem();
+		return tool.getDamageValue() + 2 >= tool.getMaxDamage();
 	}
 	
 }

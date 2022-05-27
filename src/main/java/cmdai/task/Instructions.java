@@ -3,6 +3,8 @@ package cmdai.task;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import net.minecraft.client.KeyMapping;
+
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 import cmdai.task.Predicates.Counter;
@@ -27,17 +29,22 @@ class Instructions {
 	/** Cancels the whole task and relinquishes task manager lock. */
 	static class Stop extends BaseInstruction {
 		
-		Stop() {
+		private Task parentTask;
+		
+		Stop(Task parentTask) {
+			this.parentTask = parentTask;
 			this.comment("STOP");
 		}
 		
 		@Override
 		protected void process() {
-			cancel(null);
-			// TODO release key mappings?
+			parentTask.stop();
+			KeyMapping.releaseAll();
 			// TODO unlock mouse handler?
-			// TaskManager.deactivateTask();
+			TaskManager.deactivateTask();
 		}
+		
+		@Override protected void cancel() {}
 		
 	}
 	
@@ -105,16 +112,19 @@ class Instructions {
 	}
 	
 	/** Continue execution concurrently at next and label. */
-	static class Fork extends Goto {
+	static class Fork extends BaseInstruction implements Action {
+		
+		private Label dest;
 		
 		Fork(String label) {
-			super(label, Predicates.NOW);
+			this.dest = new Label(label);
 		}
 		
 		@Override
-		public void accept(PlayerTickEvent event) {
-			next.process();
-			super.accept(event);
+		public void run() {
+			var ptr = next;
+			for (; !ptr.equals(dest); ptr = ptr.next) ;
+			ptr.process();
 		}
 		
 	}
@@ -132,14 +142,14 @@ class Instructions {
 			super(new Counter(ticks));
 			this.action = action;
 			this.timeoutAction = timeoutAction;
-			this.timeoutAction.next = this.next;
-			this.timeoutAction.prev = this.prev;
 			this.comment("TRY " + action);
 		}
 		
 		@Override
 		protected void process() {
 			super.process();
+			timeoutAction.next = action.next = next;
+			timeoutAction.prev = action.prev = prev;
 			action.complete = false;
 			if (action.trigger instanceof RequiresReset rr) rr.reset();
 		}
@@ -151,12 +161,13 @@ class Instructions {
 			if (action.complete || trigger.test(event)) {
 				TaskManager.unregister(this);
 				this.complete = true;
-				(action.complete ? next : timeoutAction).process();
+				if (!action.complete) timeoutAction.process();
 			}
 		}
 		
 	}
 	
+	/** A BaseAction with an associated Runnable, run during process. */
 	static class BaseAction extends BaseInstruction implements Action {
 		
 		private Runnable action;
@@ -172,6 +183,7 @@ class Instructions {
 		
 	}
 	
+	/** A TickAction with an associated Runnable, run when the trigger fires. */
 	static class TickAction extends TickInstruction implements Action {
 		
 		private Runnable action;

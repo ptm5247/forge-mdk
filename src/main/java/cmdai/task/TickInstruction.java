@@ -16,6 +16,11 @@ public class TickInstruction extends BaseInstruction implements Consumer<PlayerT
 	}
 	
 	@Override
+	public TickInstruction comment(String comment) {
+		return (TickInstruction) super.comment(comment);
+	}
+	
+	@Override
 	protected void process() {
 		if (trigger instanceof RequiresReset rr) rr.reset();
 		TaskManager.register(this);
@@ -30,9 +35,9 @@ public class TickInstruction extends BaseInstruction implements Consumer<PlayerT
 	}
 	
 	@Override
-	protected void cancel(Boolean dir) {
+	protected void cancel() {
 		TaskManager.unregister(this);
-		super.cancel(dir);
+		super.cancel();
 	}
 	
 	@Override

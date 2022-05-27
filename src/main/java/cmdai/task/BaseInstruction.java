@@ -10,8 +10,9 @@ public abstract class BaseInstruction {
 	protected boolean complete;
 	protected Optional<String> comment = Optional.empty();
 	
-	void comment(String comment) {
+	public BaseInstruction comment(String comment) {
 		this.comment = Optional.of(comment);
+		return this;
 	}
 	
 	protected void process() {
@@ -20,16 +21,9 @@ public abstract class BaseInstruction {
 		next.process();
 	}
 	
-	protected void cancel(Boolean dir) {
+	protected void cancel() {
 		complete = true;
-		
-		if (dir != null) {
-			var n = dir ? next : prev;
-			if (n != null) n.cancel(dir);
-		} else {
-			if (prev != null) prev.cancel(false);
-			if (next != null) next.cancel(true);
-		}
+		next.cancel();
 	}
 	
 	@Override

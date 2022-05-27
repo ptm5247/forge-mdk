@@ -1,5 +1,8 @@
 package cmdai;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+
 import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.client.gui.ForgeIngameGui;
 import net.minecraftforge.client.gui.OverlayRegistry;
@@ -29,8 +32,8 @@ public class Main {
         MinecraftForge.EVENT_BUS.addListener(TaskManager::toggleRenderOverlay);
         
         // Register the remaining setup methods
-        MinecraftForge.EVENT_BUS.register(this);
-        FMLJavaModLoadingContext.get().getModEventBus().register(this);
+        MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
     }
     
     @SubscribeEvent
@@ -46,13 +49,18 @@ public class Main {
 	}
     
     @SubscribeEvent
-	public void on(RegisterCommandsEvent event) {
+	public void registerCommands(RegisterCommandsEvent event) {
     	// Register $stop with the local dispatcher
 		TaskManager.register(CommandScreen.dispatcher);
 		
 		// Register the rest of the mod commands
 		FishCommand.register(CommandScreen.dispatcher);
 	}
+    
+    @SuppressWarnings("resource")
+	public static BlockPos pbpos() {
+    	return Minecraft.getInstance().player.blockPosition();
+    }
     
     /* Game Thread: Minecraft.runTick(boolean !outofmemory) from Minecraft.run#663
      * 

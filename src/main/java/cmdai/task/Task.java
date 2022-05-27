@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 public record Task(String name, TaskEnvironment env, BaseInstruction head) {
@@ -12,6 +14,9 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 	static record DebugLine(String line, int indentation, boolean active) {}
 	
 	public static Task compile(String name, BaseInstruction...instructions) {
+		Task task = new Task(name, new TaskEnvironment(), instructions[0]);
+		instructions = ArrayUtils.addAll(instructions, LABEL("stop"), T(1), STOP(task));
+		
 		for (int i = 0; i < instructions.length; i++) {
 			if (i > 0)
 				instructions[i].prev = instructions[i - 1];
@@ -19,7 +24,7 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 				instructions[i].next = instructions[i + 1];
 		}
 		
-		return new Task(name, new TaskEnvironment(), instructions[0]);
+		return task;
 	}
 	
 	void start() {
@@ -29,7 +34,7 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 	}
 	
 	void stop() {
-		head.cancel(null);
+		head.cancel();
 	}
 	
 	List<DebugLine> debug() {
@@ -37,7 +42,7 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 		int indentation = 0;
 		boolean prev = true;
 		
-		overlay.add(new DebugLine("Task :" + name, 0, true));
+		overlay.add(new DebugLine("Task: " + name, 0, true));
 		for (var ptr = head; ptr != null; prev = ptr.complete, ptr = ptr.next)
 			if (ptr instanceof Instructions.Indentation indent)
 				indentation += indent.distance;
@@ -79,8 +84,8 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 		return $(() -> {});
 	}
 	
-	public static BaseInstruction STOP() {
-		return new Instructions.Stop();
+	private static BaseInstruction STOP(Task parentTask) {
+		return new Instructions.Stop(parentTask);
 	}
 	
 	public static BaseInstruction T(int distance) {
