@@ -2,6 +2,8 @@ package cmdai.task;
 
 import java.util.Optional;
 
+import cmdai.task.Instructions.Action;
+
 public abstract class BaseInstruction {
 	
 	protected BaseInstruction prev, next;
@@ -13,6 +15,7 @@ public abstract class BaseInstruction {
 	}
 	
 	protected void process() {
+		if (this instanceof Action action) action.run();
 		complete = true;
 		next.process();
 	}

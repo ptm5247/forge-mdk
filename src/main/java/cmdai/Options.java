@@ -7,9 +7,9 @@ import net.minecraft.client.KeyMapping;
 public class Options {
 	
 	public static final KeyMapping keyCommand =
-			new KeyMapping("key.modcommand", GLFW.GLFW_KEY_RIGHT_ALT, KeyMapping.CATEGORY_MULTIPLAYER);
+			new KeyMapping("Open Mod Command Terminal", GLFW.GLFW_KEY_RIGHT_ALT, "CMD AI");
 	public static final KeyMapping keyToggleRenderOverlay = 
-			new KeyMapping("key.toggleoverlay", GLFW.GLFW_KEY_O, KeyMapping.CATEGORY_INTERFACE);
+			new KeyMapping("Toggle Task Manager Overlay", GLFW.GLFW_KEY_O, "CMD AI");
 	
 	public static boolean renderOverlay = false;
 

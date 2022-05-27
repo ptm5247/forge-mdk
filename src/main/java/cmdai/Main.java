@@ -8,13 +8,13 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 import cmdai.commands.FishCommand;
 import cmdai.local.CommandScreen;
 import cmdai.task.TaskManager;
 
 @Mod(Main.MODID)
-@Mod.EventBusSubscriber(modid = Main.MODID)
 public class Main {
 	
 	// The value here should match an entry in the META-INF/mods.toml file
@@ -27,10 +27,14 @@ public class Main {
         MinecraftForge.EVENT_BUS.addListener(CommandScreen::open);
         // Regster the Task Manager to listen for keyToggleRenderOverlay
         MinecraftForge.EVENT_BUS.addListener(TaskManager::toggleRenderOverlay);
+        
+        // Register the remaining setup methods
+        MinecraftForge.EVENT_BUS.register(this);
+        FMLJavaModLoadingContext.get().getModEventBus().register(this);
     }
     
     @SubscribeEvent
-	public static void on(FMLClientSetupEvent event) {
+	public void clientSetup(FMLClientSetupEvent event) {
     	// Register the keybinding to open the Command Screen
 		ClientRegistry.registerKeyBinding(Options.keyCommand);
 		// Register the keybinding to toggle the Task Manager overlay
@@ -42,7 +46,7 @@ public class Main {
 	}
     
     @SubscribeEvent
-	public static void on(RegisterCommandsEvent event) {
+	public void on(RegisterCommandsEvent event) {
     	// Register $stop with the local dispatcher
 		TaskManager.register(CommandScreen.dispatcher);
 		

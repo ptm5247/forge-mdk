@@ -10,9 +10,12 @@ class Predicates {
 	
 	static interface RequiresReset {
 		
-		public void reset();
+		void reset();
 		
 	}
+	
+	static final Predicate<PlayerTickEvent> NOW = e -> true;
+	static final Predicate<PlayerTickEvent> NEVER = e -> false;
 	
 	/** Accepts a tick event after a certain number of tests. */
 	static class Counter implements Predicate<PlayerTickEvent>, RequiresReset {

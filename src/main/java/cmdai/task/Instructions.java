@@ -1,13 +1,17 @@
 package cmdai.task;
 
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 import cmdai.task.Predicates.Counter;
 import cmdai.task.Predicates.RequiresReset;
+import cmdai.task.TaskEnvironment.DataAccessor;
 
 class Instructions {
+	
+	static interface Action extends Runnable {}
 	
 	/** Just for indentation when debugging (not displayed as a step). */
 	static class Indentation extends BaseInstruction {
@@ -23,18 +27,16 @@ class Instructions {
 	/** Cancels the whole task and relinquishes task manager lock. */
 	static class Stop extends BaseInstruction {
 		
-		@Override
-		protected void process() {
-			super.cancel(false);
-			// TODO release key mappings?
-			// TODO unlock mouse handler?
-			TaskManager.deactivateTask();
+		Stop() {
 			this.comment("STOP");
 		}
 		
 		@Override
-		protected void cancel(Boolean dir) {
-			process();
+		protected void process() {
+			cancel(null);
+			// TODO release key mappings?
+			// TODO unlock mouse handler?
+			// TaskManager.deactivateTask();
 		}
 		
 	}
@@ -68,7 +70,7 @@ class Instructions {
 			var ptr = next;
 			
 			if (trigger.test(event))
-				for (ptr = this; !ptr.equals(dest); ptr = ptr.next)
+				for (ptr = this; !ptr.equals(dest); ptr = dir ? ptr.next : ptr.prev)
 					ptr.complete = dir;
 			ptr.process();
 		}
@@ -78,7 +80,7 @@ class Instructions {
 	/**
 	 * Jump forwards in the code to the specified label. 
 	 * Use NOW as the trigger for a simple jump,
-	 * or specify a condition to get IF-like behavior
+	 * or specify a condition to get IF-like behavior.
 	 */
 	static class Goto extends BaseJump {
 		
@@ -102,11 +104,11 @@ class Instructions {
 		
 	}
 	
-	/** Continue execution concurrently at next and label */
+	/** Continue execution concurrently at next and label. */
 	static class Fork extends Goto {
 		
 		Fork(String label) {
-			super(label, TickInstruction.NOW);
+			super(label, Predicates.NOW);
 		}
 		
 		@Override
@@ -119,7 +121,7 @@ class Instructions {
 	
 	/** 
 	 * Tries an instruction for a specified max number of ticks,
-	 * and executes a separate instruction in the event of a timeout
+	 * and executes a separate instruction in the event of a timeout.
 	 */
 	static class Try extends TickInstruction {
 		
@@ -151,6 +153,55 @@ class Instructions {
 				this.complete = true;
 				(action.complete ? next : timeoutAction).process();
 			}
+		}
+		
+	}
+	
+	static class BaseAction extends BaseInstruction implements Action {
+		
+		private Runnable action;
+		
+		BaseAction(Runnable action) {
+			this.action = action;
+		}
+
+		@Override
+		public void run() {
+			action.run();
+		}
+		
+	}
+	
+	static class TickAction extends TickInstruction implements Action {
+		
+		private Runnable action;
+		
+		TickAction(Predicate<PlayerTickEvent> trigger, Runnable action) {
+			super(trigger);
+			this.action = action;
+		}
+
+		@Override
+		public void run() {
+			action.run();
+		}
+		
+	}
+	
+	/** Sets the given variable with a value attained at runtime */
+	static class Set<T> extends BaseInstruction implements Action {
+		
+		private DataAccessor<T> variable;
+		private Supplier<T> runtimeGetter;
+
+		Set(DataAccessor<T> variable, Supplier<T> runtimeGetter) {
+			this.variable = variable;
+			this.runtimeGetter = runtimeGetter;
+		}
+		
+		@Override
+		public void run() {
+			variable.set(runtimeGetter.get());
 		}
 		
 	}

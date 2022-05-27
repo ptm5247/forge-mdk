@@ -7,10 +7,7 @@ import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 import cmdai.task.Predicates.RequiresReset;
 
-class TickInstruction extends BaseInstruction implements Consumer<PlayerTickEvent> {
-	
-	static final Predicate<PlayerTickEvent> NOW = e -> true;
-	static final Predicate<PlayerTickEvent> NEVER = e -> false;
+public class TickInstruction extends BaseInstruction implements Consumer<PlayerTickEvent> {
 	
 	protected Predicate<PlayerTickEvent> trigger;
 	

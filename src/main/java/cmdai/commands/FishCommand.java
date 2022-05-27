@@ -1,8 +1,6 @@
 package cmdai.commands;
 
-import static cmdai.task.Task.LABEL;
-import static cmdai.task.Task.STOP;
-import static cmdai.task.Task.compile;
+import static cmdai.task.Task.*;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -14,6 +12,10 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
+
+import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 import cmdai.ModException;
 
@@ -30,16 +32,8 @@ public class FishCommand extends Command {
 	@Override
 	public void performChecks(CommandContext<CommandSourceStack> context)
 			throws CommandSyntaxException {
-		var inv = Command.getLocalPlayerOrException(context).getInventory();
-		
-		if (!inv.contains(new ItemStack(Items.FISHING_ROD))) throw ERROR_NO_ROD.cmd();
-	}
-	
-	private FishCommand() {
-		super(compile("Fish",
-			LABEL("fish"),
-			STOP()
-		));
+		if (!player.getInventory().contains(new ItemStack(Items.FISHING_ROD)))
+			throw ERROR_NO_ROD.cmd();
 	}
 	
 	/**
@@ -48,5 +42,29 @@ public class FishCommand extends Command {
 	 */
 	private static final EntityDataAccessor<Boolean> DATA_BITING =
 			EntityDataSerializers.BOOLEAN.createAccessor(9);
+	
+	private boolean isBiting(PlayerTickEvent event) {
+		var hook = event.player.fishing;
+		return hook == null ? false : hook.getEntityData().get(DATA_BITING);
+	}
+	
+	private void equipBestFishingRod() {
+		equipBestTool(Items.FISHING_ROD, new Enchantment[] {
+				Enchantments.MENDING, Enchantments.FISHING_LUCK,
+				Enchantments.UNBREAKING, Enchantments.FISHING_SPEED
+		});
+	}
+	
+	private FishCommand() {
+		setTask(compile("Fish",
+			$(this::equipBestFishingRod),
+			FORK("move"),
+			
+			LABEL("fish"),
+			
+			LABEL("stop"),
+			STOP()
+		));
+	}
 	
 }
