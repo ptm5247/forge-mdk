@@ -1,4 +1,4 @@
-package cmdai.local;
+package cmdai.gui;
 
 import java.util.Collection;
 import java.util.List;
@@ -192,7 +192,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       int i = this.input.getCursorPosition();
       if (flag1) {
          //CommandDispatcher<SharedSuggestionProvider> commanddispatcher = this.minecraft.player.connection.getCommands();
-    	 CommandDispatcher<CommandSourceStack> commanddispatcher = CommandScreen.dispatcher;
+    	 CommandDispatcher<CommandSourceStack> commanddispatcher = cmdai.commands.Commands.getCommands().getDispatcher();
     	 if (this.currentParse == null) {
             //this.currentParse = commanddispatcher.parse(stringreader, this.minecraft.player.connection.getSuggestionsProvider());
     		 this.currentParse = commanddispatcher.parse(stringreader, this.minecraft.player.createCommandSourceStack());
@@ -277,7 +277,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       //SuggestionContext<SharedSuggestionProvider> suggestioncontext = commandcontextbuilder.findSuggestionContext(this.input.getCursorPosition());
 	  SuggestionContext<CommandSourceStack> suggestioncontext = commandcontextbuilder.findSuggestionContext(this.input.getCursorPosition()); 
       //Map<CommandNode<SharedSuggestionProvider>, String> map = this.minecraft.player.connection.getCommands().getSmartUsage(suggestioncontext.parent, this.minecraft.player.connection.getSuggestionsProvider());
-	  Map<CommandNode<CommandSourceStack>, String> map = CommandScreen.dispatcher.getSmartUsage(suggestioncontext.parent, this.minecraft.player.createCommandSourceStack());
+	  Map<CommandNode<CommandSourceStack>, String> map = cmdai.commands.Commands.getCommands().getDispatcher().getSmartUsage(suggestioncontext.parent, this.minecraft.player.createCommandSourceStack());
       List<FormattedCharSequence> list = Lists.newArrayList();
       int i = 0;
       Style style = Style.EMPTY.withColor(p_93921_);

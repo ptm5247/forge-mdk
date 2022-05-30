@@ -9,13 +9,13 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
-public record Task(String name, TaskEnvironment env, BaseInstruction head) {
-	
-	static record DebugLine(String line, int indentation, boolean active) {}
+import cmdai.task.report.ReportManager;
+
+public record Task(String name, TaskEnvironment env, ReportManager reporter, BaseInstruction head) {
 	
 	public static Task compile(String name, BaseInstruction...instructions) {
-		Task task = new Task(name, new TaskEnvironment(), instructions[0]);
-		instructions = ArrayUtils.addAll(instructions, LABEL("stop"), T(1), STOP(task));
+		Task task = new Task(name, new TaskEnvironment(), new ReportManager(), instructions[0]);
+		instructions = ArrayUtils.addAll(instructions, L(), LABEL("stop"), T(1), STOP());
 		
 		for (int i = 0; i < instructions.length; i++) {
 			if (i > 0)
@@ -30,19 +30,24 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 	void start() {
 		for (var ptr = head; ptr != null; ptr = ptr.next)
 			ptr.complete = false;
+		reporter.start();
 		head.process();
 	}
 	
 	void stop() {
 		head.cancel();
+		reporter.stop();
 	}
 	
-	List<DebugLine> debug() {
+	public static record DebugLine(String line, int indentation, boolean active) {}
+	
+	public List<DebugLine> debug() {
 		var overlay = new ArrayList<DebugLine>();
 		int indentation = 0;
 		boolean prev = true;
+		var header = String.format("Task: %s - %s", name, TaskManager.getActiveElapsed());
 		
-		overlay.add(new DebugLine("Task: " + name, 0, true));
+		overlay.add(new DebugLine(header, 0, true));
 		for (var ptr = head; ptr != null; prev = ptr.complete, ptr = ptr.next)
 			if (ptr instanceof Instructions.Indentation indent)
 				indentation += indent.distance;
@@ -56,11 +61,11 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 		return new Instructions.BaseAction(action);
 	}
 	
-	public static TickInstruction $(Predicate<PlayerTickEvent> trigger, Runnable action) {
+	public static BaseTickInstruction $(Predicate<PlayerTickEvent> trigger, Runnable action) {
 		return new Instructions.TickAction(trigger, action);
 	}
 	
-	public static TickInstruction AFTER(int ticks, Runnable action) {
+	public static BaseTickInstruction AFTER(int ticks, Runnable action) {
 		return $(new Predicates.Counter(ticks), action);
 	}
 	
@@ -70,6 +75,10 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 	
 	public static BaseInstruction GOTO(String label, Predicate<PlayerTickEvent> condition) {
 		return new Instructions.Goto(label, condition);
+	}
+	
+	public static BaseInstruction L() {
+		return new Instructions.LineBreak();
 	}
 	
 	public static BaseInstruction LABEL(String label) {
@@ -84,15 +93,15 @@ public record Task(String name, TaskEnvironment env, BaseInstruction head) {
 		return $(() -> {});
 	}
 	
-	private static BaseInstruction STOP(Task parentTask) {
-		return new Instructions.Stop(parentTask);
+	private static BaseInstruction STOP() {
+		return new Instructions.Stop();
 	}
 	
 	public static BaseInstruction T(int distance) {
 		return new Instructions.Indentation(distance);
 	}
 	
-	public static BaseInstruction TRY(int ticks, TickInstruction tryInstruction) {
+	public static BaseInstruction TRY(int ticks, BaseTickInstruction tryInstruction) {
 		return new Instructions.Try(ticks, tryInstruction, NOOP());
 	}
 	

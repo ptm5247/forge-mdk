@@ -4,51 +4,91 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.TextComponent;
 
-import net.minecraftforge.client.event.InputEvent.KeyInputEvent;
-import net.minecraftforge.client.gui.ForgeIngameGui;
-import net.minecraftforge.client.gui.OverlayRegistry;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.LogicalSide;
 
+import cmdai.Main;
 import cmdai.ModException;
-import cmdai.Options;
 
 public class TaskManager {
 	
+	private static final String BUSY_MSG = "Task \"%s\" is already running! Stop it with $stop";
 	private static ArrayList<Consumer<PlayerTickEvent>> listeners = new ArrayList<>();
 	private static Optional<Task> activeTask = Optional.empty();
-	private static final String ERROR_BUSY = "Task \"%s\" is already running! Stop it with $stop";
+	private static long activeStart;
+//	private static int activeTicks = 0;
+//	private static ContinuousProfiler profiler =
+//			new ContinuousProfiler(Util.timeSource, () -> activeTicks);
+//	private static ProfileResults profileResults = EmptyProfileResults.EMPTY;
+	
+	/** To be called during FMLClientSetupEvent. */
+	public static void clientSetup() {
+		MinecraftForge.EVENT_BUS.addListener(TaskManager::forwardTickEvent);
+		//MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGHEST, TaskManager::profilerStart);
+		//MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, TaskManager::profilerEnd);
+	}
+	
+	public static void push(String str) {
+		Minecraft.getInstance().getProfiler().push(Main.MODID);
+		Minecraft.getInstance().getProfiler().push(str);
+	}
+	
+	public static void pop() {
+		Minecraft.getInstance().getProfiler().pop();
+		Minecraft.getInstance().getProfiler().pop();
+	}
 	
 	/** Register a TickInstruction to receive PlayerTickEvents. */
 	static void register(Consumer<PlayerTickEvent> listener) {
 		listeners.add(listener);
 	}
 	
+//	public static void profilerStart(ClientTickEvent event) {
+//		if (event.phase != Phase.START) return;
+//
+//		if (!Options.renderTaskReportOverlay) {
+//			if (profiler.isEnabled())
+//				profiler.disable();
+//		} else if (!profiler.isEnabled()) {
+//			activeTicks = 0;
+//			profiler.enable();
+//		} else {
+//			activeTicks += 1;
+//		}
+//		
+//		//getProfiler().startTick();
+//	}
+//	
+//	public static void profilerEnd(RenderTickEvent event) {
+//		if (event.phase != Phase.END) return;
+//		
+//		//getProfiler().endTick();
+//		
+//		profileResults = profiler.getResults();
+//	}
+	
 	/** Forwards the hooked PlayerTickEvent to all of the registered listeners. */
 	public static void forwardTickEvent(PlayerTickEvent event) {
-		if (event.side == LogicalSide.CLIENT && event.phase == Phase.END) {
-			int i = 0;
-			
-			while (i < listeners.size()) {
-				int prevSize = listeners.size();
-				listeners.get(i).accept(event);
-				if (prevSize == listeners.size()) i += 1;
-			}
+		if (activeTask.isEmpty()) return;
+		
+		if (event.side != LogicalSide.CLIENT || event.phase != Phase.END) return;
+		
+		push("task instructions");
+		
+		int i = 0;
+		while (i < listeners.size()) {
+			int prevSize = listeners.size();
+			listeners.get(i).accept(event);
+			if (prevSize == listeners.size()) i += 1;
 		}
+		
+		pop();
 	}
 	
 	/** Unregister a TickInstruction from receiving PlayerTickEvents. */
@@ -60,77 +100,44 @@ public class TaskManager {
 	public static void start(Task task) throws CommandSyntaxException {
 		if (activeTask.isEmpty()) {
 			activeTask = Optional.of(task);
+			activeStart = System.currentTimeMillis();
 			task.start();
-		} else throw new ModException(String.format(ERROR_BUSY, activeTask.get().name())).cmd();
+		} else throw new ModException(String.format(BUSY_MSG, activeTask.get().name())).cmd();
 	}
 	
-	static void deactivateTask() {
-		/* 
-		 * TODO make non-static, generate report through additions to an environment variable
-		 * or by a Task.report method which tracks information to be compiled by the STOP
-		 * instruction and displayed as a message to the player. If so, ensure that canceling
-		 * a task with $stop will display a partially generated report. May require activate.
-		 */
+	/** Stops the currently active task. This will cause an error if no tasks are active. */
+	public static void stopActiveTask() {
+		activeTask.get().stop();
 		activeTask = Optional.empty();
 	}
 	
-	/** Registers the $stop command. */
-	public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-		dispatcher.register(Commands.literal("stop").executes(TaskManager::stop));
+	public static Optional<Task> getActiveTask() {
+		return activeTask;
 	}
 	
-	/** The $stop command: cancels the currently active task, if any. */
-	@SuppressWarnings("resource")
-	private static int stop(CommandContext<CommandSourceStack> context) {
-		String msg;
+	public static String getActiveElapsed() {
+		long millis = System.currentTimeMillis() - activeStart;
 		
-		if (activeTask.isPresent()) {
-			activeTask.get().stop();
-			msg = "Stopped task \"" + activeTask.get().name() + "\"";
-		} else msg = "No tasks to stop!";
+		int h = (int) (millis / 3600e3);
+		millis %= 3600e3;
+		int m = (int) (millis / 60e3);
+		millis %= 60e3;
+		int s = (int) (millis / 1e3);
+		millis %= 1e3;
+		int t = (int) (millis / 100);
 		
-		Minecraft.getInstance().player.sendMessage(new TextComponent(msg), Util.NIL_UUID);
-		return Command.SINGLE_SUCCESS;
+		if (h == 0 && m == 0) return String.format("%02d.%d", s, t);
+		if (h == 0)	return String.format("%02d:%02d.%d", m, s, t);
+		else return String.format("%02d:%02d:%02d.%d", h, m, s, t);
+			
 	}
 	
-	/** 
-	 * Toggles the rendering of the Task Manager overlay.
-	 * The KeyboardManager checks for the regular debug toggle key (F3) explicitly on every key
-	 * event. This is also where KeyInputEvents are fired, so this check is done here.
-	 */
-	public static void toggleRenderOverlay(KeyInputEvent event) {
-		var game = Minecraft.getInstance();
-		
-		if (game.screen == null && game.getOverlay() == null) {
-			while (Options.keyToggleRenderOverlay.consumeClick()) {
-				Options.renderOverlay = !Options.renderOverlay;
-				OverlayRegistry.enableOverlay(TaskManager::renderOverlay, Options.renderOverlay);
-			}
-		}
-	}
+//	public static ProfilerFiller getProefiler() {
+//		return profiler.getFiller();
+//	}
+//	
+//	public static ProfileResults getProfileResults() {
+//		return profileResults;
+//	}
 	
-	/**
-	 * Implements {@link net.minecraftforge.client.gui.IIngameOverlay}.
-	 * Renders the Task Manager overlay, which is now separate from the normal debug overlay.
-	 * Adapted from {@link ForgeIngameGui#renderHUDText}
-	 */
-	@SuppressWarnings("resource")
-	public static void renderOverlay(ForgeIngameGui gui, PoseStack pStack, float p, int w, int h) {
-		if (activeTask.isEmpty()) return;
-		RenderSystem.defaultBlendFunc();
-		
-		int y1 = 1;
-		var font = Minecraft.getInstance().font;
-		int indw = font.width("--");
-		
-		for (var msg : activeTask.get().debug()) {
-			int x1 = 1 + msg.indentation() * indw;
-			int x2 = font.width(msg.line()) + x1 + 2;
-			int y2 = y1 + font.lineHeight;
-			ForgeIngameGui.fill(pStack, x1, y1, x2, y2, 0x90505050);
-			font.draw(pStack, msg.line(), x1 + 1, y1 + 1, msg.active() ? 0xE0E0E0 : 0xB0B0B0);
-			y1 += font.lineHeight;
-		}
-	}
-
 }

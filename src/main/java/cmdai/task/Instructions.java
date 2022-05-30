@@ -26,22 +26,27 @@ class Instructions {
 		
 	}
 	
+	/** Just for indentation when debugging (not displayed as a step). */
+	static class LineBreak extends BaseInstruction {
+		
+		LineBreak() {
+			this.comment("");
+		}
+		
+	}
+	
 	/** Cancels the whole task and relinquishes task manager lock. */
 	static class Stop extends BaseInstruction {
 		
-		private Task parentTask;
-		
-		Stop(Task parentTask) {
-			this.parentTask = parentTask;
+		Stop() {
 			this.comment("STOP");
 		}
 		
 		@Override
 		protected void process() {
-			parentTask.stop();
+			TaskManager.stopActiveTask();
 			KeyMapping.releaseAll();
 			// TODO unlock mouse handler?
-			TaskManager.deactivateTask();
 		}
 		
 		@Override protected void cancel() {}
@@ -57,7 +62,7 @@ class Instructions {
 		
 	}
 	
-	private static class BaseJump extends TickInstruction {
+	private static class BaseJump extends BaseTickInstruction {
 		
 		final Label dest;
 		final boolean dir;
@@ -118,6 +123,7 @@ class Instructions {
 		
 		Fork(String label) {
 			this.dest = new Label(label);
+			this.comment("FORK " + label);
 		}
 		
 		@Override
@@ -133,12 +139,12 @@ class Instructions {
 	 * Tries an instruction for a specified max number of ticks,
 	 * and executes a separate instruction in the event of a timeout.
 	 */
-	static class Try extends TickInstruction {
+	static class Try extends BaseTickInstruction {
 		
-		private TickInstruction action;
+		private BaseTickInstruction action;
 		private BaseInstruction timeoutAction;
 		
-		Try(int ticks, TickInstruction action, BaseInstruction timeoutAction) {
+		Try(int ticks, BaseTickInstruction action, BaseInstruction timeoutAction) {
 			super(new Counter(ticks));
 			this.action = action;
 			this.timeoutAction = timeoutAction;
@@ -184,7 +190,7 @@ class Instructions {
 	}
 	
 	/** A TickAction with an associated Runnable, run when the trigger fires. */
-	static class TickAction extends TickInstruction implements Action {
+	static class TickAction extends BaseTickInstruction implements Action {
 		
 		private Runnable action;
 		

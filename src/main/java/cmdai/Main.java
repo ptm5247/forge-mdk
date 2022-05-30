@@ -1,20 +1,15 @@
 package cmdai;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-
-import net.minecraftforge.client.ClientRegistry;
-import net.minecraftforge.client.gui.ForgeIngameGui;
-import net.minecraftforge.client.gui.OverlayRegistry;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
-import cmdai.commands.FishCommand;
-import cmdai.local.CommandScreen;
+import cmdai.commands.Commands;
+import cmdai.gui.CommandScreen;
+import cmdai.gui.TaskExecutionOverlay;
+import cmdai.gui.TaskOverlayManager;
+import cmdai.gui.TaskReportOverlay;
 import cmdai.task.TaskManager;
 
 @Mod(Main.MODID)
@@ -24,43 +19,18 @@ public class Main {
 	public static final String MODID = "cmdai";
 	
     public Main() {
-    	// Register the Task Manager for PlayerTickEvents
-        MinecraftForge.EVENT_BUS.addListener(TaskManager::forwardTickEvent);
-        // Register the Command Screen to listen for keyCommand
-        MinecraftForge.EVENT_BUS.addListener(CommandScreen::open);
-        // Regster the Task Manager to listen for keyToggleRenderOverlay
-        MinecraftForge.EVENT_BUS.addListener(TaskManager::toggleRenderOverlay);
-        
-        // Register the remaining setup methods
-        MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
     }
     
     @SubscribeEvent
 	public void clientSetup(FMLClientSetupEvent event) {
-    	// Register the keybinding to open the Command Screen
-		ClientRegistry.registerKeyBinding(Options.keyCommand);
-		// Register the keybinding to toggle the Task Manager overlay
-		ClientRegistry.registerKeyBinding(Options.keyToggleRenderOverlay);
-		
-		// Register the Task Manager overlay (displays task instructions live)
-		OverlayRegistry.registerOverlayAbove(
-				ForgeIngameGui.HUD_TEXT_ELEMENT, "Task Overview", TaskManager::renderOverlay);
+    	Commands.clientSetup();
+    	CommandScreen.clientSetup();
+    	TaskManager.clientSetup();
+		TaskExecutionOverlay.clientSetup();
+		TaskReportOverlay.clientSetup();
+		TaskOverlayManager.clientSetup();
 	}
-    
-    @SubscribeEvent
-	public void registerCommands(RegisterCommandsEvent event) {
-    	// Register $stop with the local dispatcher
-		TaskManager.register(CommandScreen.dispatcher);
-		
-		// Register the rest of the mod commands
-		FishCommand.register(CommandScreen.dispatcher);
-	}
-    
-    @SuppressWarnings("resource")
-	public static BlockPos pbpos() {
-    	return Minecraft.getInstance().player.blockPosition();
-    }
     
     /* Game Thread: Minecraft.runTick(boolean !outofmemory) from Minecraft.run#663
      * 

@@ -1,7 +1,22 @@
 package cmdai.commands;
 
-import static cmdai.task.Task.*;
-import static cmdai.task.Inputs.*;
+import static cmdai.task.Inputs.DOWN;
+import static cmdai.task.Inputs.UP;
+import static cmdai.task.Inputs.USE;
+import static cmdai.task.Inputs.click;
+import static cmdai.task.Inputs.press;
+import static cmdai.task.Inputs.release;
+import static cmdai.task.Task.$;
+import static cmdai.task.Task.AFTER;
+import static cmdai.task.Task.FORK;
+import static cmdai.task.Task.GOTO;
+import static cmdai.task.Task.L;
+import static cmdai.task.Task.LABEL;
+import static cmdai.task.Task.LOOP;
+import static cmdai.task.Task.T;
+import static cmdai.task.Task.TRY;
+import static cmdai.task.Task.WATCH;
+import static cmdai.task.Task.compile;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -17,11 +32,14 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
+import net.minecraftforge.event.entity.player.ItemFishedEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import cmdai.Main;
 import cmdai.ModException;
+import cmdai.Util;
+import cmdai.task.report.ReportGenerators;
 
-public class FishCommand extends Command {
+public class FishCommand extends AbstractTaskCommand {
 	
 	public static final ModException ERROR_NO_ROD = new ModException("You must have a fishing rod "
 			+ "in your inventory to use this command!");
@@ -62,21 +80,36 @@ public class FishCommand extends Command {
 	
 			$(this::equipBestFishingRod)					.comment("equip best fishing rod"),
 			FORK("move"),
-			
+	L(),
 			LABEL("fish"),
 	T(1),		GOTO("stop", this::toolWillBreak)			.comment("STOP IF tool will break"),
 				AFTER(20, click(USE))						.comment("cast line"),
 				TRY(600, $(this::isBiting, click(USE))		.comment("reel IF biting")),
 	T(-1),	LOOP("fish"),
-			
+	L(),
 			LABEL("move"),
 	T(1),		AFTER(12000, press(DOWN))					.comment("press DOWN"),
-				WATCH(Main::pbpos, release(DOWN))			.comment("release DOWN"),
+				WATCH(Util::pbpos, release(DOWN))			.comment("release DOWN"),
 				$(press(UP))								.comment("press UP"),
-				WATCH(Main::pbpos, release(UP))				.comment("release UP"),
+				WATCH(Util::pbpos, release(UP))				.comment("release UP"),
 	T(-1),	LOOP("move")
 	
 		));
+		
+		registerProfiler();
+		registerReportGenerator(new FishingTally());
+	}
+	
+	private class FishingTally extends ReportGenerators.Tally {
+		
+		@SubscribeEvent
+		public void on(ItemFishedEvent event) {
+			if (!event.getPlayer().is(player)) return;
+			
+			for (var stack : event.getDrops())
+				add(stack.getDisplayName().getContents(), stack.getCount());
+		}
+		
 	}
 	
 }

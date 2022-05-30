@@ -7,17 +7,17 @@ import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 import cmdai.task.Predicates.RequiresReset;
 
-public class TickInstruction extends BaseInstruction implements Consumer<PlayerTickEvent> {
+public class BaseTickInstruction extends BaseInstruction implements Consumer<PlayerTickEvent> {
 	
 	protected Predicate<PlayerTickEvent> trigger;
 	
-	protected TickInstruction(Predicate<PlayerTickEvent> trigger) {
+	protected BaseTickInstruction(Predicate<PlayerTickEvent> trigger) {
 		this.trigger = trigger;
 	}
 	
 	@Override
-	public TickInstruction comment(String comment) {
-		return (TickInstruction) super.comment(comment);
+	public BaseTickInstruction comment(String comment) {
+		return (BaseTickInstruction) super.comment(comment);
 	}
 	
 	@Override

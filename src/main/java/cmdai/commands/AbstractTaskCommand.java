@@ -20,10 +20,12 @@ import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 import cmdai.task.Task;
 import cmdai.task.TaskManager;
+import cmdai.task.report.IReportGenerator;
+import cmdai.task.report.ReportGenerators;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 
-abstract class Command implements com.mojang.brigadier.Command<CommandSourceStack> {
+abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<CommandSourceStack> {
 	
 	private Task task;
 	protected Minecraft minecraft;
@@ -31,6 +33,14 @@ abstract class Command implements com.mojang.brigadier.Command<CommandSourceStac
 	
 	protected void setTask(Task task) {
 		this.task = task;
+	}
+	
+	protected void registerReportGenerator(IReportGenerator generator) {
+		this.task.reporter().registerGenerator(generator);
+	}
+	
+	protected void registerProfiler() {
+		registerReportGenerator(new ReportGenerators.TaskProfiler());
 	}
 	
 	abstract void performChecks(CommandContext<CommandSourceStack> context)
@@ -48,9 +58,13 @@ abstract class Command implements com.mojang.brigadier.Command<CommandSourceStac
 		performChecks(context);
 		TaskManager.start(task);
 		
-		return Command.SINGLE_SUCCESS;
+		return AbstractTaskCommand.SINGLE_SUCCESS;
 	}
 	
+	/** 
+	 * Equips the best version of the specified tool based on the specified enchantment precedence.
+	 * Ties are broken arbitrarily.
+	 */
 	protected void equipBestTool(Item tool, Enchantment[] precedence) {
 		var inv = player.getInventory();
 		var tools = new Int2ObjectLinkedOpenHashMap<ItemStack>();
@@ -81,7 +95,7 @@ abstract class Command implements com.mojang.brigadier.Command<CommandSourceStac
 			
 			var iter = tools.int2ObjectEntrySet().fastIterator();
 			
-			for (iter.previous(); i-- > 0; iter.previous())
+			for (iter.previous(); --i > 0; iter.previous())
 				if ((onehot & (0b1L << i)) == 0)
 					iter.remove();
 		}
