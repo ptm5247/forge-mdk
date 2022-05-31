@@ -38,6 +38,11 @@ public class ReportGenerators {
 	public static class Tally implements IReportGenerator {
 		
 		private Object2IntAVLTreeMap<String> map = new Object2IntAVLTreeMap<>();
+		private String title;
+		
+		protected Tally(String title) {
+			this.title = title;
+		}
 		
 		public void add(String key, int value) {
 			map.addTo(key, value);
@@ -45,8 +50,9 @@ public class ReportGenerators {
 		
 		@Override
 		public List<String> generate() {
-			var report = new ArrayList<String>(map.size());
+			var report = new ArrayList<String>(map.size() + 1);
 			
+			report.add(title);
 			for (var entry : map.object2IntEntrySet())
 				report.add(entry.getKey() + " - " + entry.getIntValue());
 			

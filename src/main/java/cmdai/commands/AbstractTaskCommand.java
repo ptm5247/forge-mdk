@@ -75,9 +75,10 @@ abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<Comma
 			if (item.is(tool)) tools.add(item);
 		}
 		
-		sortItemsByAttribute(tools, item ->	item.getMaxDamage() - item.getDamageValue(), 2);
-		for (var e : precedence)
-			sortItemsByAttribute(tools, i -> EnchantmentHelper.getItemEnchantmentLevel(e, i), -1);
+		tools.removeIf(t -> t.getMaxDamage() - t.getDamageValue() < 2);
+		sortItemsByAttribute(tools, t -> t.getMaxDamage() - t.getDamageValue());
+		for (var ench : precedence)
+			sortItemsByAttribute(tools, t -> EnchantmentHelper.getItemEnchantmentLevel(ench, t));
 		
 		if (tools.isEmpty()) return false;
 		int ind = 0;
@@ -95,20 +96,18 @@ abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<Comma
 	}
 	
 	private static void sortItemsByAttribute(
-			ArrayList<ItemStack> items, Function<ItemStack, Integer> evaluator, int minimum) {
+			ArrayList<ItemStack> items, Function<ItemStack, Integer> evaluator) {
 		long onehot = 0L;
 		int i = 0, maxLevel = 0;
 		
 		for (var item : items) {
 			int level = evaluator.apply(item);
 			
-			if (level >= minimum) {
-				if (level > maxLevel) {
-					maxLevel = level;
-					onehot = 0b1L << i;
-				} else if (level == maxLevel) {
-					onehot |= 0b1L << i;
-				}
+			if (level > maxLevel) {
+				maxLevel = level;
+				onehot = 0b1L << i;
+			} else if (level == maxLevel) {
+				onehot |= 0b1L << i;
 			}
 			
 			i += 1;

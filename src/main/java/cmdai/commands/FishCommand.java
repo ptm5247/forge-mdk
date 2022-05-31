@@ -104,12 +104,18 @@ public class FishCommand extends AbstractTaskCommand {
 	
 	private class FishingTally extends ReportGenerators.Tally {
 		
+		private FishingTally() {
+			super("Items Fished:");
+		}
+		
 		@SubscribeEvent
 		public void on(ItemFishedEvent event) {
-			if (!event.getPlayer().is(player)) return;
+			if (!event.getPlayer().equals(player)) return;
 			
-			for (var stack : event.getDrops())
-				add(stack.getDisplayName().getContents(), stack.getCount());
+			for (var stack : event.getDrops()) {
+				var name = stack.getDisplayName().getString();
+				add(name.substring(1, name.length() - 1), stack.getCount());
+			}
 		}
 		
 	}
