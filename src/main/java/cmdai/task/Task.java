@@ -86,7 +86,11 @@ public record Task(String name, TaskEnvironment env, ReportManager reporter, Bas
 	}
 	
 	public static BaseInstruction LOOP(String label) {
-		return new Instructions.Loop(label, Predicates.NOW);
+		return LOOP(label, Predicates.NOW);
+	}
+	
+	public static BaseInstruction LOOP(String label, Predicate<PlayerTickEvent> condition) {
+		return new Instructions.Loop(label, condition);
 	}
 	
 	public static BaseInstruction NOOP() {

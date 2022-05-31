@@ -1,5 +1,8 @@
 package cmdai.commands;
 
+import java.util.ArrayList;
+import java.util.function.Function;
+
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
@@ -22,8 +25,6 @@ import cmdai.task.Task;
 import cmdai.task.TaskManager;
 import cmdai.task.report.IReportGenerator;
 import cmdai.task.report.ReportGenerators;
-
-import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 
 abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<CommandSourceStack> {
 	
@@ -65,42 +66,22 @@ abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<Comma
 	 * Equips the best version of the specified tool based on the specified enchantment precedence.
 	 * Ties are broken arbitrarily.
 	 */
-	protected void equipBestTool(Item tool, Enchantment[] precedence) {
+	protected boolean equipBestTool(Item tool, Enchantment[] precedence) {
 		var inv = player.getInventory();
-		var tools = new Int2ObjectLinkedOpenHashMap<ItemStack>();
+		var tools = new ArrayList<ItemStack>();
 		
-		for (int i = 0; i < Inventory.SLOT_OFFHAND + 1; i++) {
+		for (int i = 0; i <= Inventory.SLOT_OFFHAND; i++) {
 			var item = inv.getItem(i);
-			if (item.is(tool)) tools.put(i, item);
+			if (item.is(tool)) tools.add(item);
 		}
 		
-		for (var ench : precedence) {
-			if (tools.size() == 1) break;
-			
-			long onehot = (0b1L << tools.size()) - 0b1L;
-			int i = 0, maxLevel = 0;
-			
-			for (var entry : tools.int2ObjectEntrySet()) {
-				int level = EnchantmentHelper.getItemEnchantmentLevel(ench, entry.getValue());
-				
-				if (level > maxLevel) {
-					maxLevel = level;
-					onehot = 0b1L << i;
-				} else if (level == maxLevel) {
-					onehot |= 0b0L << i;
-				}
-				
-				i += 1;
-			}
-			
-			var iter = tools.int2ObjectEntrySet().fastIterator();
-			
-			for (iter.previous(); --i > 0; iter.previous())
-				if ((onehot & (0b1L << i)) == 0)
-					iter.remove();
-		}
+		sortItemsByAttribute(tools, item ->	item.getMaxDamage() - item.getDamageValue(), 2);
+		for (var e : precedence)
+			sortItemsByAttribute(tools, i -> EnchantmentHelper.getItemEnchantmentLevel(e, i), -1);
 		
-		int ind = tools.firstIntKey();
+		if (tools.isEmpty()) return false;
+		int ind = 0;
+		while (inv.getItem(ind) != tools.get(0)) ind += 1;
 		
 		if (Inventory.isHotbarSlot(ind))
 			inv.selected = ind;
@@ -109,6 +90,31 @@ abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<Comma
 		else 
 			minecraft.getConnection().send(new ServerboundPlayerActionPacket(
 					Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
+		
+		return true;
+	}
+	
+	private static void sortItemsByAttribute(
+			ArrayList<ItemStack> items, Function<ItemStack, Integer> evaluator, int minimum) {
+		long onehot = 0L;
+		int i = 0, maxLevel = 0;
+		
+		for (var item : items) {
+			int level = evaluator.apply(item);
+			
+			if (level >= minimum) {
+				if (level > maxLevel) {
+					maxLevel = level;
+					onehot = 0b1L << i;
+				} else if (level == maxLevel) {
+					onehot |= 0b1L << i;
+				}
+			}
+			
+			i += 1;
+		}
+		
+		while (i-- > 0)	if ((onehot & (0b1L << i)) == 0) items.remove(i);
 	}
 	
 	/** 

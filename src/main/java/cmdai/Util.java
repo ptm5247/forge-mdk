@@ -18,9 +18,6 @@ public class Util {
 		/*
 		 * 
 		 * Up next:
-		 * - test to see if select fishing rod actually works
-		 * - break ties with durability
-		 * - change fish command to select new rod if existing one will break
 		 * - change task profiler to actually show task profile instead of everything
 		 * - remove all of the old custom profiler stuff if the above step works
 		 * - should the fishing tally be working?

@@ -68,8 +68,9 @@ public class FishCommand extends AbstractTaskCommand {
 		return hook == null ? false : hook.getEntityData().get(DATA_BITING);
 	}
 	
-	private void equipBestFishingRod() {
-		equipBestTool(Items.FISHING_ROD, new Enchantment[] {
+	/** returns true upon failure. */
+	private boolean equipBestFishingRod(PlayerTickEvent event) {
+		return !equipBestTool(Items.FISHING_ROD, new Enchantment[] {
 				Enchantments.MENDING, Enchantments.FISHING_LUCK,
 				Enchantments.UNBREAKING, Enchantments.FISHING_SPEED
 		});
@@ -77,14 +78,15 @@ public class FishCommand extends AbstractTaskCommand {
 	
 	private FishCommand() {
 		setTask(compile("Fish",
-	
-			$(this::equipBestFishingRod)					.comment("equip best fishing rod"),
+			
 			FORK("move"),
-	L(),
+			
+	L(),	LABEL("equip"),
+			GOTO("stop", this::equipBestFishingRod)			.comment("equip best fishing rod"),
 			LABEL("fish"),
-	T(1),		GOTO("stop", this::toolWillBreak)			.comment("STOP IF tool will break"),
+	T(1),		LOOP("equip", this::toolWillBreak)			.comment("LOOP equip IF rod will break"),
 				AFTER(20, click(USE))						.comment("cast line"),
-				TRY(600, $(this::isBiting, click(USE))		.comment("reel IF biting")),
+				TRY(700, $(this::isBiting, click(USE))		.comment("reel IF biting")),
 	T(-1),	LOOP("fish"),
 	L(),
 			LABEL("move"),
