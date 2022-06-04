@@ -98,7 +98,6 @@ public class FishCommand extends AbstractTaskCommand {
 	
 		));
 		
-		registerProfiler();
 		registerReportGenerator(new FishingTally());
 	}
 	

@@ -4,12 +4,10 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 
-import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.TextComponent;
 
+import cmdai.Util;
 import cmdai.task.TaskManager;
 
 public class StopCommand implements Command<CommandSourceStack> {
@@ -21,16 +19,12 @@ public class StopCommand implements Command<CommandSourceStack> {
 	
 	/** Cancels the currently active task, if any. */
 	@Override
-	@SuppressWarnings("resource")
 	public int run(CommandContext<CommandSourceStack> context) {
-		String msg;
-		
 		if (TaskManager.getActiveTask().isPresent()) {
-			msg = "Stopped task \"" + TaskManager.getActiveTask().get().name() + "\"";
+			Util.msg("Stopped task \"" + TaskManager.getActiveTask().get().name() + "\"");
 			TaskManager.stopActiveTask();
-		} else msg = "No tasks to stop!";
+		} else Util.msg("No tasks to stop!");
 		
-		Minecraft.getInstance().player.sendMessage(new TextComponent(msg), Util.NIL_UUID);
 		return Command.SINGLE_SUCCESS;
 	}
 	

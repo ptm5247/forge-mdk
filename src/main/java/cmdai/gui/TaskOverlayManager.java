@@ -41,10 +41,11 @@ public class TaskOverlayManager {
 		if (Options.keyToggleRenderTaskExecutionOverlay.consumeClick()) {
 			toggle(TaskExecutionOverlay.TASK_EXECUTION_ELEMENT);
 		} else if (Options.keyToggleRenderTaskReportOverlay.consumeClick()) {
+			boolean rendering =  toggle(TaskReportOverlay.TASK_REPORT_ELEMENT);
 			/* The vanilla options renderDebug and renderDebugCharts need to be on in order for the
 			 * profiler to be active (see Minecraft.shouldRenderFpsPie). */
 			game.options.renderDebug = game.options.renderDebugCharts =
-					toggle(TaskReportOverlay.TASK_REPORT_ELEMENT);
+					Options.profileDuringTaskReport = rendering && Screen.hasShiftDown();
 		} else if (event.getKey() == GLFW.GLFW_KEY_F3 && event.getAction() == GLFW.GLFW_RELEASE &&
 				anyTaskOverlayIsActive() && vanillaOptionsChanged) {
 			/* If a Task overlay is open when the player opens the vanilla debug screen, it should

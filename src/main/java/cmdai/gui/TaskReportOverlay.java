@@ -23,8 +23,7 @@ public class TaskReportOverlay implements IIngameOverlay {
 	public static void clientSetup() {
 		TASK_REPORT_ELEMENT = (TaskReportOverlay) OverlayRegistry.registerOverlayAbove(
 				ForgeIngameGui.HUD_TEXT_ELEMENT, "Task Report", new TaskReportOverlay());
-		// This must be false. To set it to true, vanilla settings also need attention here.
-		OverlayRegistry.enableOverlay(TASK_REPORT_ELEMENT, false);
+		OverlayRegistry.enableOverlay(TASK_REPORT_ELEMENT, true);
 		ClientRegistry.registerKeyBinding(Options.keyToggleRenderTaskReportOverlay);
 	}
 	

@@ -13,4 +13,7 @@ public class Options {
 	public static final KeyMapping keyToggleRenderTaskReportOverlay = 
 			new KeyMapping("Toggle Task Report Overlay", GLFW.GLFW_KEY_P, "CMD AI");
 	
+	// This must be false. To set it to true, vanilla settings also need attention here.
+	public static boolean profileDuringTaskReport = false;
+	
 }

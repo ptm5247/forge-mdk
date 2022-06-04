@@ -24,7 +24,6 @@ import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import cmdai.task.Task;
 import cmdai.task.TaskManager;
 import cmdai.task.report.IReportGenerator;
-import cmdai.task.report.ReportGenerators;
 
 abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<CommandSourceStack> {
 	
@@ -38,10 +37,6 @@ abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<Comma
 	
 	protected void registerReportGenerator(IReportGenerator generator) {
 		this.task.reporter().registerGenerator(generator);
-	}
-	
-	protected void registerProfiler() {
-		registerReportGenerator(new ReportGenerators.TaskProfiler());
 	}
 	
 	abstract void performChecks(CommandContext<CommandSourceStack> context)
@@ -81,9 +76,9 @@ abstract class AbstractTaskCommand implements com.mojang.brigadier.Command<Comma
 			sortItemsByAttribute(tools, t -> EnchantmentHelper.getItemEnchantmentLevel(ench, t));
 		
 		if (tools.isEmpty()) return false;
+		
 		int ind = 0;
 		while (inv.getItem(ind) != tools.get(0)) ind += 1;
-		
 		if (Inventory.isHotbarSlot(ind))
 			inv.selected = ind;
 		else if (ind < Inventory.INVENTORY_SIZE)

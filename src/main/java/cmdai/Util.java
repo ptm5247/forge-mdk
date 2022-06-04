@@ -7,6 +7,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 
 public class Util {
+	
+	@SuppressWarnings("resource")
+	public static void msg(Component component) {
+		Minecraft.getInstance().player.sendMessage(component, net.minecraft.Util.NIL_UUID);
+	}
+	
+	public static void msg(String message) {
+		msg(new TextComponent(message));
+	}
 
 	@SuppressWarnings("resource")
 	public static BlockPos pbpos() {
@@ -18,10 +27,6 @@ public class Util {
 		/*
 		 * 
 		 * Up next:
-		 * - change task profiler to actually show task profile instead of everything
-		 * - remove all of the old custom profiler stuff if the above step works
-		 * - should the fishing tally be working?
-		 * - check through all files, then ready to move on to mining
 		 * 
 		 */
 		

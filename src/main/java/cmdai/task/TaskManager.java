@@ -22,16 +22,10 @@ public class TaskManager {
 	private static ArrayList<Consumer<PlayerTickEvent>> listeners = new ArrayList<>();
 	private static Optional<Task> activeTask = Optional.empty();
 	private static long activeStart;
-//	private static int activeTicks = 0;
-//	private static ContinuousProfiler profiler =
-//			new ContinuousProfiler(Util.timeSource, () -> activeTicks);
-//	private static ProfileResults profileResults = EmptyProfileResults.EMPTY;
 	
 	/** To be called during FMLClientSetupEvent. */
 	public static void clientSetup() {
 		MinecraftForge.EVENT_BUS.addListener(TaskManager::forwardTickEvent);
-		//MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGHEST, TaskManager::profilerStart);
-		//MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, TaskManager::profilerEnd);
 	}
 	
 	public static void push(String str) {
@@ -48,30 +42,6 @@ public class TaskManager {
 	static void register(Consumer<PlayerTickEvent> listener) {
 		listeners.add(listener);
 	}
-	
-//	public static void profilerStart(ClientTickEvent event) {
-//		if (event.phase != Phase.START) return;
-//
-//		if (!Options.renderTaskReportOverlay) {
-//			if (profiler.isEnabled())
-//				profiler.disable();
-//		} else if (!profiler.isEnabled()) {
-//			activeTicks = 0;
-//			profiler.enable();
-//		} else {
-//			activeTicks += 1;
-//		}
-//		
-//		//getProfiler().startTick();
-//	}
-//	
-//	public static void profilerEnd(RenderTickEvent event) {
-//		if (event.phase != Phase.END) return;
-//		
-//		//getProfiler().endTick();
-//		
-//		profileResults = profiler.getResults();
-//	}
 	
 	/** Forwards the hooked PlayerTickEvent to all of the registered listeners. */
 	public static void forwardTickEvent(PlayerTickEvent event) {
@@ -131,13 +101,5 @@ public class TaskManager {
 		else return String.format("%02d:%02d:%02d.%d", h, m, s, t);
 			
 	}
-	
-//	public static ProfilerFiller getProefiler() {
-//		return profiler.getFiller();
-//	}
-//	
-//	public static ProfileResults getProfileResults() {
-//		return profileResults;
-//	}
 	
 }
