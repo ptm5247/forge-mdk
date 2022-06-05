@@ -26,6 +26,7 @@ public class Commands {
 	public Commands() {
 		StopCommand.register(dispatcher);
 		FishCommand.register(dispatcher);
+		DiscordCommand.register(dispatcher);
 	}
 	
 	/** To be called during FMLClientSetupEvent. */
