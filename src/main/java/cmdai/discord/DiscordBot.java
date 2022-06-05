@@ -36,9 +36,9 @@ public class DiscordBot {
 	
 	private JDA jda;
 	private Guild guild;
-	private Category online, offline;
+	private Category online, offline, main;
 	private Map<UUID, TextChannel> UUID2Channel = new HashMap<>();
-	private TextChannel general;
+	private TextChannel server, systemFeed;
 	
 	private DiscordBot() throws LoginException, IOException {
 		var tokenBytes = this.getClass().getResourceAsStream("/discord_token").readAllBytes();
@@ -78,21 +78,14 @@ public class DiscordBot {
 		var bytes = getClass().getResourceAsStream("/discord_server_id").readAllBytes();
 		this.guild = jda.getGuildById(new String(bytes, StandardCharsets.UTF_8));
 		
-		// ensure the online and offline categories exist
-		var onlineCategories = guild.getCategoriesByName("Online Players", false);
-		this.online = onlineCategories.isEmpty()
-				? guild.createCategory("Online Players").complete()
-				: onlineCategories.get(0);
-		var offlineCategories = guild.getCategoriesByName("Offline Players", false);
-		this.offline = offlineCategories.isEmpty()
-				? guild.createCategory("Offline Players").complete()
-				: offlineCategories.get(0);
+		// ensure the online, offline, and main categories exist
+		this.main = getOrCreateCategory("Server Channels");
+		this.online = getOrCreateCategory("Online Players");
+		this.offline = getOrCreateCategory("Offline Players");
 		
-		// ensure general exists
-		var generalChannels = guild.getTextChannelsByName("general", false);
-		this.general = generalChannels.isEmpty()
-				? guild.createTextChannel("general").complete()
-				: generalChannels.get(0);
+		// ensure server and systemFeed exist
+		this.server = getOrCreateChannel("server-chat", main);
+		this.systemFeed = getOrCreateChannel("system-feed", main);
 		
 		// ensure player channels all exist and are in the right category
 		var moveOffline = new ArrayList<>(online.getTextChannels());
@@ -101,6 +94,8 @@ public class DiscordBot {
 			var channel = UUID2Channel.computeIfAbsent(uuid, this::getChannelFromUUID);
 			
 			moveOffline.remove(channel);
+			if (channel.getParentCategoryIdLong() == offline.getIdLong())
+				channel.getManager().setParent(online).complete();
 		}
 		moveOffline.forEach(c -> c.getManager().setParent(offline).complete());
 		
@@ -112,11 +107,20 @@ public class DiscordBot {
 	private TextChannel getChannelFromUUID(UUID uuid) {
 		var cpl = Minecraft.getInstance().getConnection();
 		var name = cpl.getPlayerInfo(uuid).getProfile().getName().toLowerCase();
-		var textChannels = guild.getTextChannelsByName(name, false);
 		
-		return textChannels.isEmpty()
-				? guild.createTextChannel(name, online).complete()
-				: textChannels.get(0);
+		return getOrCreateChannel(name, online);
+	}
+	
+	/** Gets the existing Category or creates a new one. */
+	private Category getOrCreateCategory(String name) {
+		var list = guild.getCategoriesByName(name, false);
+		return list.isEmpty() ? guild.createCategory(name).complete() : list.get(0);
+	}
+	
+	/** Gets the existing TextChannel or creates a new one in the given category. */
+	private TextChannel getOrCreateChannel(String name, Category category) {
+		var list = guild.getTextChannelsByName(name, false);
+		return list.isEmpty() ? guild.createTextChannel(name, category).complete() : list.get(0);
 	}
 	
 	/** Moves a player channel into online upon login. */
@@ -139,20 +143,23 @@ public class DiscordBot {
 	public void on(ClientChatReceivedEvent event) {
 		var channel = Minecraft.getInstance().getConnection().getOnlinePlayerIds().size() <= 2
 				? UUID2Channel.get(event.getSenderUUID())
-				: general;
+				: server;
 		
 		String msg = event.getMessage().getString();
 		
 		switch (event.getType()) {
 		case CHAT:
-			if (channel != general) msg = msg.substring(msg.indexOf(' ') + 1);
+			if (channel != server) msg = msg.substring(msg.indexOf(' ') + 1);
 			break;
 		case SYSTEM:
 			int skip = msg.indexOf("whispers to you:");
 			if (skip != -1) {
 				msg = msg.substring(skip + 17);
-				break;
+			} else {
+				channel = systemFeed;
+				msg = '`' + msg + '`';
 			}
+			break;
 		default: return;
 		}
 		
