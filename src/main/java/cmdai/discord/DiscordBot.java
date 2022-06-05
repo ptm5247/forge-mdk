@@ -14,6 +14,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.TextComponent;
 
+import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
@@ -25,9 +26,11 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.AnnotatedEventManager;
 
 public class DiscordBot {
@@ -73,6 +76,7 @@ public class DiscordBot {
 		} else return false;
 	}
 	
+	@SuppressWarnings("resource")
 	@net.dv8tion.jda.api.hooks.SubscribeEvent
 	public void on(ReadyEvent event) throws IOException {
 		var bytes = getClass().getResourceAsStream("/discord_server_id").readAllBytes();
@@ -94,7 +98,7 @@ public class DiscordBot {
 			var channel = UUID2Channel.computeIfAbsent(uuid, this::getChannelFromUUID);
 			
 			moveOffline.remove(channel);
-			if (channel.getParentCategoryIdLong() == offline.getIdLong())
+			if (channel.getParentCategory().equals(offline))
 				channel.getManager().setParent(online).complete();
 		}
 		moveOffline.forEach(c -> c.getManager().setParent(offline).complete());
@@ -106,9 +110,11 @@ public class DiscordBot {
 	/** Gets an existing text channel or creates a new one under online. */
 	private TextChannel getChannelFromUUID(UUID uuid) {
 		var cpl = Minecraft.getInstance().getConnection();
-		var name = cpl.getPlayerInfo(uuid).getProfile().getName().toLowerCase();
+		var name = cpl.getPlayerInfo(uuid).getProfile().getName();
+		var channel = getOrCreateChannel(name.toLowerCase(), online);
 		
-		return getOrCreateChannel(name, online);
+		channel.getManager().setTopic(name).complete();
+		return channel;
 	}
 	
 	/** Gets the existing Category or creates a new one. */
@@ -149,9 +155,11 @@ public class DiscordBot {
 		
 		switch (event.getType()) {
 		case CHAT:
+			if (event.getSenderUUID().equals(Minecraft.getInstance().player.getUUID())) return;
 			if (channel != server) msg = msg.substring(msg.indexOf(' ') + 1);
 			break;
 		case SYSTEM:
+			if (msg.startsWith("You whisper to")) return;
 			int skip = msg.indexOf("whispers to you:");
 			if (skip != -1) {
 				msg = msg.substring(skip + 17);
@@ -164,6 +172,22 @@ public class DiscordBot {
 		}
 		
 		channel.sendMessage(msg).queue();
+	}
+	
+	@SuppressWarnings("resource")
+	@net.dv8tion.jda.api.hooks.SubscribeEvent
+	public void on(MessageReceivedEvent event) {
+		if (event.getChannelType() != ChannelType.TEXT ||
+				!event.getGuild().equals(guild) || event.getAuthor().isBot()) return;
+		
+		var msg = event.getMessage().getContentDisplay();
+		var channel = event.getTextChannel();
+		
+		if (channel.equals(server) || (channel.getParentCategory().equals(online) &&
+				Minecraft.getInstance().getConnection().getOnlinePlayerIds().size() <= 2))
+			Minecraft.getInstance().player.chat(msg);
+		else if (channel.getParentCategory().equals(online))
+			ClientCommandHandler.sendMessage(String.format("/msg %s %s", channel.getTopic(), msg));
 	}
 
 }
