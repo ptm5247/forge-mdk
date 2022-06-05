@@ -22,16 +22,6 @@ public class Util {
 		return Minecraft.getInstance().player.blockPosition();
 	}
 	
-	{
-		
-		/*
-		 * 
-		 * Up next:
-		 * 
-		 */
-		
-	}
-	
 	/** Adapted from the KeyboardHandler. */
 	@Deprecated
 	@SuppressWarnings("resource")
