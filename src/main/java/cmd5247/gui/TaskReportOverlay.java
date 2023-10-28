@@ -2,14 +2,12 @@ package cmd5247.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import cmd5247.Options;
 import cmd5247.task.TaskManager;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
@@ -24,10 +22,6 @@ public class TaskReportOverlay implements IGuiOverlay {
 		event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_report", new TaskReportOverlay());
 	}
 
-	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-		event.register(Options.keyToggleRenderTaskReportOverlay);
-	}
-	
 	/** Adapted from {@link ForgeIngameGui#renderHUDText} */
 	@Override
 	@SuppressWarnings("resource")

@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import cmd5247.Options;
 import cmd5247.Util;
 import net.minecraft.network.chat.Component;
 
@@ -26,7 +25,6 @@ public class ReportManager implements IReportGenerator {
 	@Override
 	public void stop() {
 		generators.forEach(g -> g.stop());
-		Options.profileDuringTaskReport = false;
 		var report = generate();
 		if (!report.isEmpty()) Util.msg(Component.literal(String.join("\n", report)));
 	}
@@ -35,7 +33,7 @@ public class ReportManager implements IReportGenerator {
 	public List<String> generate() {
 		var report = new ArrayList<String>();
 		
-		int i = Options.profileDuringTaskReport ? 0 : 1;
+		int i = 1;
 		for (; i < generators.size(); i++) {
 			report.addAll(generators.get(i).generate());
 			report.add("");

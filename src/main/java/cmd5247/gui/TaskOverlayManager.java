@@ -2,7 +2,6 @@ package cmd5247.gui;
 
 import org.lwjgl.glfw.GLFW;
 
-import cmd5247.Options;
 import cmd5247.task.TaskManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -103,19 +102,19 @@ public class TaskOverlayManager {
 	// 		|| OverlayRegistry.getEntry(TaskReportOverlay.TASK_REPORT_ELEMENT).isEnabled();
 	// }
 	
-	@SuppressWarnings("resource")
-	private static boolean updateVanillaOptionsAndDetectChanges() {
-		var options = Minecraft.getInstance().options;
+	// @SuppressWarnings("resource")
+	// private static boolean updateVanillaOptionsAndDetectChanges() {
+	// 	var options = Minecraft.getInstance().options;
 		
-		boolean changed = (renderDebugPrev != options.renderDebug) ||
-				(renderDebugChartsPrev != options.renderDebugCharts) ||
-				(renderFpsChartPrev != options.renderFpsChart);
+	// 	boolean changed = (renderDebugPrev != options.renderDebug) ||
+	// 			(renderDebugChartsPrev != options.renderDebugCharts) ||
+	// 			(renderFpsChartPrev != options.renderFpsChart);
 		
-		renderDebugPrev = options.renderDebug;
-		renderDebugChartsPrev = options.renderDebugCharts;
-		renderFpsChartPrev = options.renderFpsChart;
+	// 	renderDebugPrev = options.renderDebug;
+	// 	renderDebugChartsPrev = options.renderDebugCharts;
+	// 	renderFpsChartPrev = options.renderFpsChart;
 		
-		return changed;
-	}
+	// 	return changed;
+	// }
 	
 }

@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import cmd5247.Main;
+import cmd5247.CMD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.profiling.ProfileResults;
 import net.minecraft.util.profiling.ResultField;
@@ -58,7 +58,7 @@ public class ReportGenerators {
 				if (r.name.equals("unspecified")) continue;
 				if (collect) collection.add(r);
 				recurse(results, path + sep + r.name, collection,
-						r.name.equals(Main.MODID) ? true : collect);
+						r.name.equals(CMD.MODID) ? true : collect);
 			}
 		}
 		

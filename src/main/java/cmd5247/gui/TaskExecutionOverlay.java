@@ -2,12 +2,10 @@ package cmd5247.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import cmd5247.Options;
 import cmd5247.task.TaskManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
@@ -22,10 +20,6 @@ public class TaskExecutionOverlay implements IGuiOverlay {
 		event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_execution", new TaskExecutionOverlay());
 	}
 
-	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-		event.register(Options.keyToggleRenderTaskExecutionOverlay);
-	}
-	
 	/**
 	 * Renders the Task Manager overlay, which is now separate from the normal debug overlay.
 	 * Adapted from {@link ForgeIngameGui#renderHUDText}

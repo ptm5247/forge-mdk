@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
-import cmd5247.Main;
+import cmd5247.CMD;
 import cmd5247.ModException;
 import net.minecraft.client.Minecraft;
 
@@ -28,7 +28,7 @@ public class TaskManager {
 	}
 	
 	public static void push(String str) {
-		Minecraft.getInstance().getProfiler().push(Main.MODID);
+		Minecraft.getInstance().getProfiler().push(CMD.MODID);
 		Minecraft.getInstance().getProfiler().push(str);
 	}
 	

@@ -1,84 +1,107 @@
 package cmd5247.gui;
 
-import cmd5247.Options;
-import cmd5247.commands.Commands;
-import cmd5247.task.TaskManager;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+
+import cmd5247.CMD;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
-
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent.ClientTickEvent;
-import net.minecraftforge.event.TickEvent.Phase;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.ClickEvent.Action;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.util.Mth;
 
 public class CommandScreen extends ChatScreen {
 
-	public CommandScreen(String p_95579_) {
-		super(p_95579_);
-	}
+  private static List<String> history = new ArrayList<>();
+  private static int historyPos = -1;
+  private static String historyBuffer = "";
 
-	@Override
-	protected void init() {
-		super.init();
-		// change the CommandSuggestions to the local version
-		this.commandSuggestions = new CommandSuggestions(this.minecraft, this, this.input, 
-				this.font, false, false, 1, 10, true, -805306368);
-		this.commandSuggestions.updateCommandInfo();
-	}
-	
-	/**
-	 * Called by {@link ChatScreen#keyPressed}.
-	 * Overridden to cut out the ClientChatEvent middleman.
-	 */
-	@Override
-	public boolean handleChatInput(String input, boolean p_242161_) {
-		input = this.normalizeChatMessage(input);
-		if (input.isEmpty()) {
-		   return true;
-		} else {
-			if (p_242161_) {
-				this.minecraft.gui.getChat().addRecentChat(input);
-			}
+  public CommandScreen(String p_95579_) {
+    super(p_95579_);
+  }
 
-			if (input.startsWith("$")) {
-				Commands.getCommands().performCommand(input);
-			} else if (input.startsWith("/")) {
-				this.minecraft.player.connection.sendCommand(input.substring(1));
-			} else {
-				this.minecraft.player.connection.sendChat(input);
-			}
+  @Override
+  protected void init() {
+    super.init();
+    // change the CommandSuggestions to the local version
+    this.commandSuggestions = new CommandSuggestions(this.minecraft, this, this.input, this.font, false, false, 1, 10,
+        true, -805306368);
+    this.commandSuggestions.updateCommandInfo();
+    historyPos = history.size();
+  }
 
-			return minecraft.screen == this; // FORGE: Prevent closing the screen if another screen has been opened.
-		}
-	}
+  /** Called by {@link ChatScreen#keyPressed}. */
+  @Override
+  @SuppressWarnings("resource")
+  public boolean handleChatInput(String input, boolean p_242161_) {
+    var command = normalizeChatMessage(input);
+    if (command.isEmpty()) {
+      return true;
+    } else {
+      /* Adapted from {@link net.minecraft.commands.Commands#performCommand}. */
+      if (command.startsWith("$")) {
+        var source = Minecraft.getInstance().player.createCommandSourceStack();
+        if (history.isEmpty() || !history.get(history.size() - 1).equals(command))
+          history.add(command);
+        try {
+          CMD.instance.dispatcher.execute(command.substring(1), source);
+        } catch (CommandRuntimeException cre) {
+          source.sendFailure(cre.getComponent());
+        } catch (CommandSyntaxException cse) {
+          source.sendFailure(ComponentUtils.fromMessage(cse.getRawMessage()));
+          if (cse.getInput() != null && cse.getCursor() >= 0) {
+            var failure = Component.empty()
+                .withStyle(ChatFormatting.GRAY)
+                .withStyle(style -> style.withClickEvent(
+                    new ClickEvent(Action.SUGGEST_COMMAND, command)));
+            int j = Math.min(cse.getInput().length(), cse.getCursor());
 
-	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-		event.register(Options.keyCommand);
-		MinecraftForge.EVENT_BUS.addListener(CommandScreen::open);
-	}
+            if (j > 10)
+              failure.append("...");
+            failure.append(cse.getInput().substring(Math.max(0, j - 10), j));
+            if (j < cse.getInput().length())
+              failure.append(
+                  Component.literal(cse.getInput().substring(j))
+                      .withStyle(new ChatFormatting[] {
+                          ChatFormatting.RED, ChatFormatting.UNDERLINE }));
+            failure.append(Component.translatable("command.context.here")
+                .withStyle(new ChatFormatting[] {
+                    ChatFormatting.RED, ChatFormatting.ITALIC }));
 
-	/**
-	 * The other option is to listen to KeyInputEvents, but these will be fired on both edges of
-	 * every keyboard input. Normal chat and command screen opening inputs are checked at most once
-	 * per client tick, so this method will hook this event to be more consistent with that.
-	 */
-	public static void open(ClientTickEvent event) {
-		TaskManager.push("inputs");
-		
-		if (event.phase == Phase.END) {
-			var game = Minecraft.getInstance();
-			
-			if (game.screen == null && game.getOverlay() == null && Options.keyCommand.consumeClick()) {
-				var status = game.getChatStatus();
+            source.sendFailure(failure);
+          }
+        }
+      }
+      return minecraft.screen == this; // FORGE: Prevent closing the screen if another screen has been opened.
+    }
+  }
 
-				if (!status.isChatAllowed(game.isLocalServer()))
-					game.gui.setOverlayMessage(status.getMessage(), false);
-				else
-					game.setScreen(new CommandScreen("$"));
-			}
-		}
-		
-		TaskManager.pop();
-	}
+  /** Overridden to keep a separate history for mod commands */
+  @Override
+  public void moveInHistory(int delta) {
+    int i = historyPos + delta;
+    int j = history.size();
+    i = Mth.clamp(i, 0, j);
+    if (i != historyPos) {
+      if (i == j) {
+        historyPos = j;
+        this.input.setValue(historyBuffer);
+      } else {
+        if (historyPos == j) {
+          historyBuffer = this.input.getValue();
+        }
+
+        this.input.setValue(history.get(i));
+        this.commandSuggestions.setAllowSuggestions(false);
+        historyPos = i;
+      }
+    }
+  }
 
 }
