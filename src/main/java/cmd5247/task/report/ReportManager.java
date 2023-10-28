@@ -7,7 +7,7 @@ import com.google.common.collect.Lists;
 
 import cmd5247.Options;
 import cmd5247.Util;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 
 public class ReportManager implements IReportGenerator {
 	
@@ -28,7 +28,7 @@ public class ReportManager implements IReportGenerator {
 		generators.forEach(g -> g.stop());
 		Options.profileDuringTaskReport = false;
 		var report = generate();
-		if (!report.isEmpty()) Util.msg(new TextComponent(String.join("\n", report)));
+		if (!report.isEmpty()) Util.msg(Component.literal(String.join("\n", report)));
 	}
 	
 	@Override

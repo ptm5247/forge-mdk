@@ -1,29 +1,29 @@
 package cmd5247.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 import cmd5247.Options;
 import cmd5247.task.TaskManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.gui.overlay.ForgeGui;
+import net.minecraftforge.client.gui.overlay.IGuiOverlay;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 
-import net.minecraftforge.client.ClientRegistry;
-import net.minecraftforge.client.gui.ForgeIngameGui;
-import net.minecraftforge.client.gui.IIngameOverlay;
-import net.minecraftforge.client.gui.OverlayRegistry;
-
-public class TaskExecutionOverlay implements IIngameOverlay {
+public class TaskExecutionOverlay implements IGuiOverlay {
 	
 	static TaskExecutionOverlay TASK_EXECUTION_ELEMENT;
 	
 	private TaskExecutionOverlay() {}
-	
-	/** To be called during FMLClientSetupEvent. */
-	public static void clientSetup() {
-		TASK_EXECUTION_ELEMENT = (TaskExecutionOverlay) OverlayRegistry.registerOverlayAbove(
-				ForgeIngameGui.HUD_TEXT_ELEMENT, "Task Execution", new TaskExecutionOverlay());
-		OverlayRegistry.enableOverlay(TASK_EXECUTION_ELEMENT, true);
-		ClientRegistry.registerKeyBinding(Options.keyToggleRenderTaskExecutionOverlay);
+
+	public static void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
+		event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_execution", new TaskExecutionOverlay());
+	}
+
+	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+		event.register(Options.keyToggleRenderTaskExecutionOverlay);
 	}
 	
 	/**
@@ -32,7 +32,7 @@ public class TaskExecutionOverlay implements IIngameOverlay {
 	 */
 	@Override
 	@SuppressWarnings("resource")
-	public void render(ForgeIngameGui gui, PoseStack poseStack,
+	public void render(ForgeGui gui, GuiGraphics graphics,
 			float partialTick, int width, int height) {
 		var task = TaskManager.getActiveTask();
 		if (task.isEmpty()) return;
@@ -50,8 +50,8 @@ public class TaskExecutionOverlay implements IIngameOverlay {
 				int x2 = font.width(msg.line()) + x1 + 2;
 				int y2 = y1 + font.lineHeight;
 				
-				ForgeIngameGui.fill(poseStack, x1, y1, x2, y2, 0x90505050);
-				font.draw(poseStack, msg.line(), x1 + 1, y1 + 1, msg.active() ? 0xE0E0E0 : 0xB0B0B0);
+				graphics.fill(x1, y1, x2, y2, 0x90505050);
+				graphics.drawString(Minecraft.getInstance().font, msg.line(), x1 + 1, y1 + 1, msg.active() ? 0xE0E0E0 : 0xB0B0B0);
 			}
 			
 			y1 += font.lineHeight;

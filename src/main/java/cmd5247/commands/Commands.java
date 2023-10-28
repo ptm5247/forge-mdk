@@ -10,9 +10,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.ClickEvent.Action;
 import net.minecraft.network.chat.ComponentUtils;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -26,7 +24,6 @@ public class Commands {
 	public Commands() {
 		StopCommand.register(dispatcher);
 		FishCommand.register(dispatcher);
-		DiscordCommand.register(dispatcher);
 	}
 	
 	/** To be called during FMLClientSetupEvent. */
@@ -45,7 +42,7 @@ public class Commands {
 	public CommandDispatcher<CommandSourceStack> getDispatcher() {
 		return dispatcher;
 	}
-	
+
 	/** Adapted from {@link net.minecraft.commands.Commands#performCommand}. */
 	@SuppressWarnings("resource")
 	public void performCommand(String command) {
@@ -59,7 +56,7 @@ public class Commands {
 		} catch (CommandSyntaxException cse) {
 			source.sendFailure(ComponentUtils.fromMessage(cse.getRawMessage()));
 			if (cse.getInput() != null && cse.getCursor() >= 0) {
-				MutableComponent failure = new TextComponent("")
+				var failure = Component.empty()
 						.withStyle(ChatFormatting.GRAY)
 						.withStyle(style -> style.withClickEvent(
 								new ClickEvent(Action.SUGGEST_COMMAND, command)));
@@ -68,10 +65,10 @@ public class Commands {
 				if (j > 10) failure.append("...");
 				failure.append(cse.getInput().substring(Math.max(0, j - 10), j));
 				if (j < cse.getInput().length()) failure.append(
-						new TextComponent(cse.getInput().substring(j))
+						Component.literal(cse.getInput().substring(j))
 								.withStyle(new ChatFormatting[] {
 										ChatFormatting.RED, ChatFormatting.UNDERLINE}));
-				failure.append(new TranslatableComponent("command.context.here")
+				failure.append(Component.translatable("command.context.here")
 						.withStyle(new ChatFormatting[] {
 								ChatFormatting.RED, ChatFormatting.ITALIC}));
 				

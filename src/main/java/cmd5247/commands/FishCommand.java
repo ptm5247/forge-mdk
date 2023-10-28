@@ -108,7 +108,7 @@ public class FishCommand extends AbstractTaskCommand {
 		
 		@SubscribeEvent
 		public void on(ItemFishedEvent event) {
-			if (!event.getPlayer().equals(player)) return;
+			if (!event.getEntity().equals(player)) return;
 			
 			for (var stack : event.getDrops()) {
 				var name = stack.getDisplayName().getString();

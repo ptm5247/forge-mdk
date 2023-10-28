@@ -1,35 +1,37 @@
 package cmd5247.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 import cmd5247.Options;
 import cmd5247.task.TaskManager;
+
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
-import net.minecraftforge.client.ClientRegistry;
-import net.minecraftforge.client.gui.ForgeIngameGui;
-import net.minecraftforge.client.gui.IIngameOverlay;
-import net.minecraftforge.client.gui.OverlayRegistry;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.gui.overlay.IGuiOverlay;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.client.gui.overlay.ForgeGui;
 
-public class TaskReportOverlay implements IIngameOverlay {
+public class TaskReportOverlay implements IGuiOverlay {
 	
 	static TaskReportOverlay TASK_REPORT_ELEMENT;
 	
 	private TaskReportOverlay() {}
-	
-	/** To be called during FMLClientSetupEvent. */
-	public static void clientSetup() {
-		TASK_REPORT_ELEMENT = (TaskReportOverlay) OverlayRegistry.registerOverlayAbove(
-				ForgeIngameGui.HUD_TEXT_ELEMENT, "Task Report", new TaskReportOverlay());
-		OverlayRegistry.enableOverlay(TASK_REPORT_ELEMENT, true);
-		ClientRegistry.registerKeyBinding(Options.keyToggleRenderTaskReportOverlay);
+
+	public static void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
+		event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_report", new TaskReportOverlay());
+	}
+
+	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+		event.register(Options.keyToggleRenderTaskReportOverlay);
 	}
 	
 	/** Adapted from {@link ForgeIngameGui#renderHUDText} */
 	@Override
 	@SuppressWarnings("resource")
-	public void render(ForgeIngameGui gui, PoseStack poseStack,
+	public void render(ForgeGui gui, GuiGraphics graphics,
 			float partialTick, int width, int height) {
 		var task = TaskManager.getActiveTask();
 		if (task.isEmpty()) return;
@@ -45,9 +47,9 @@ public class TaskReportOverlay implements IIngameOverlay {
 				int x2 = width - 1;
 				int x1 = x2 - font.width(line) - 1;
 				int y2 = y1 + font.lineHeight;
-				
-				ForgeIngameGui.fill(poseStack, x1, y1, x2, y2, 0x90505050);
-				font.draw(poseStack, line, x1 + 1, y1 + 1, 0xE0E0E0);
+
+				graphics.fill(x1, y1, x2, y2, 0x90505050);
+				graphics.drawString(Minecraft.getInstance().font, line, x1 + 1, y1 + 1, 0xE0E0E0);
 			}
 			
 			y1 += font.lineHeight;

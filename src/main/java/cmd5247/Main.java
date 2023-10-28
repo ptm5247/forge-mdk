@@ -6,7 +6,8 @@ import cmd5247.gui.TaskExecutionOverlay;
 import cmd5247.gui.TaskOverlayManager;
 import cmd5247.gui.TaskReportOverlay;
 import cmd5247.task.TaskManager;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -15,19 +16,29 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 public class Main {
 	
 	// The value here should match an entry in the META-INF/mods.toml file
-	public static final String MODID = "cmdai";
+	public static final String MODID = "cmd5247";
 	
     public Main() {
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
+        var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        modBus.addListener(this::clientSetup);
+        modBus.addListener(this::registerKeyMappings);
+        modBus.addListener(this::registerGuiOverlays);
+    }
+
+    public void registerKeyMappings(RegisterKeyMappingsEvent event) {
+        CommandScreen.registerKeyMappings(event);
+        TaskExecutionOverlay.registerKeyMappings(event);
+        TaskReportOverlay.registerKeyMappings(event);
+    }
+
+    public void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
+        TaskExecutionOverlay.registerGuiOverlays(event);
+        TaskReportOverlay.registerGuiOverlays(event);
     }
     
-    @SubscribeEvent
 	public void clientSetup(FMLClientSetupEvent event) {
     	Commands.clientSetup();
-    	CommandScreen.clientSetup();
     	TaskManager.clientSetup();
-		TaskExecutionOverlay.clientSetup();
-		TaskReportOverlay.clientSetup();
 		TaskOverlayManager.clientSetup();
 	}
     
