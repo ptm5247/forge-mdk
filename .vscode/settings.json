@@ -1,4 +1,15 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "files.exclude": {
+        ".gradle/**": true,
+        "gradle/**": true,
+        "build.gradle": true,
+        "settings.gradle": true,
+        "gradlew**": true,
+        "changelog.txt": true,
+        "CREDITS.txt": true,
+        "LICENSE.txt": true,
+        "README.txt": true
+    }
 }
