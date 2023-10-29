@@ -1,19 +1,12 @@
 package cmd5247;
 
-import org.lwjgl.glfw.GLFW;
-
-import com.mojang.brigadier.CommandDispatcher;
-
-import cmd5247.commands.FishCommand;
-import cmd5247.commands.StopCommand;
-import cmd5247.gui.CommandScreen;
-import cmd5247.gui.TaskExecutionOverlay;
+import cmd5247.commands.Commands;
 import cmd5247.gui.TaskOverlayManager;
-import cmd5247.gui.TaskReportOverlay;
+import cmd5247.gui.components.TaskExecutionOverlay;
+import cmd5247.gui.components.TaskReportOverlay;
+import cmd5247.gui.screens.CommandScreen;
 import cmd5247.task.TaskManager;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -26,35 +19,32 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 @Mod(CMD.MODID)
 public class CMD {
 
-  public static CMD instance;
+  private static CMD instance;
 
   // The value here should match an entry in the META-INF/mods.toml file
   public static final String MODID = "cmd5247";
 
-  // Client side, mod-only command line
-  public CommandDispatcher<CommandSourceStack> dispatcher;
-
-  // KeyMappings for the mod
-  public final KeyMapping keyCommand = new KeyMapping("Open Mod Command Terminal", GLFW.GLFW_KEY_RIGHT_ALT, "CMD");
+  public final Options options = new Options();
+  public Commands commands = new Commands();
 
   public CMD() {
-    CMD.instance = this;
-
+    instance = this;
+    
     var modBus = FMLJavaModLoadingContext.get().getModEventBus();
     modBus.addListener(this::clientSetup);
     modBus.addListener(this::registerGuiOverlays);
 
     var eventBus = MinecraftForge.EVENT_BUS;
     eventBus.addListener(this::tick);
-    // eventBus.addListener(this::registerCommands);
-    registerCommands(null); // ReloadableServerResources is not applicable in multiplayer
+    eventBus.addListener(this::onRegisterCommandsEvent);
   }
 
-  public void registerCommands(RegisterCommandsEvent event) {
-    this.dispatcher = new CommandDispatcher<>();
+  public static CMD getInstance() {
+    return instance;
+  }
 
-    FishCommand.register(this.dispatcher);
-    StopCommand.register(this.dispatcher);
+  public void onRegisterCommandsEvent(RegisterCommandsEvent event) {
+    this.commands = new Commands();
   }
 
   public void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
@@ -73,7 +63,8 @@ public class CMD {
 
     if (event.phase == Phase.END) {
 
-      if (game.screen == null && game.getOverlay() == null && this.keyCommand.consumeClick())
+      // opens command screen - see Minecraft.handleKeybinds
+      if (game.screen == null && game.getOverlay() == null && this.options.keyCommand.consumeClick())
         if (game.getChatStatus().isChatAllowed(game.isLocalServer()))
           game.setScreen(new CommandScreen("$"));
 

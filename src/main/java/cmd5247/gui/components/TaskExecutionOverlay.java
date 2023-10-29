@@ -1,28 +1,29 @@
-package cmd5247.gui;
+package cmd5247.gui.components;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import cmd5247.task.TaskManager;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.client.gui.overlay.ForgeGui;
 
-public class TaskReportOverlay implements IGuiOverlay {
+public class TaskExecutionOverlay implements IGuiOverlay {
 	
-	static TaskReportOverlay TASK_REPORT_ELEMENT;
+	static TaskExecutionOverlay TASK_EXECUTION_ELEMENT;
 	
-	private TaskReportOverlay() {}
+	private TaskExecutionOverlay() {}
 
 	public static void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
-		event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_report", new TaskReportOverlay());
+		event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_execution", new TaskExecutionOverlay());
 	}
 
-	/** Adapted from {@link ForgeIngameGui#renderHUDText} */
+	/**
+	 * Renders the Task Manager overlay, which is now separate from the normal debug overlay.
+	 * Adapted from {@link ForgeIngameGui#renderHUDText}
+	 */
 	@Override
 	@SuppressWarnings("resource")
 	public void render(ForgeGui gui, GuiGraphics graphics,
@@ -30,20 +31,21 @@ public class TaskReportOverlay implements IGuiOverlay {
 		var task = TaskManager.getActiveTask();
 		if (task.isEmpty()) return;
 		
-		TaskManager.push("report overlay");
+		TaskManager.push("execution overlay");
 		RenderSystem.defaultBlendFunc();
 		
 		int y1 = 1;
 		var font = Minecraft.getInstance().font;
+		int indw = font.width("--");
 		
-		for (var line : task.get().reporter().generate()) {
-			if (!line.isEmpty()) {
-				int x2 = width - 1;
-				int x1 = x2 - font.width(line) - 1;
+		for (var msg : task.get().debug()) {
+			if (!msg.line().isEmpty()) {
+				int x1 = 1 + msg.indentation() * indw;
+				int x2 = font.width(msg.line()) + x1 + 2;
 				int y2 = y1 + font.lineHeight;
-
+				
 				graphics.fill(x1, y1, x2, y2, 0x90505050);
-				graphics.drawString(Minecraft.getInstance().font, line, x1 + 1, y1 + 1, 0xE0E0E0);
+				graphics.drawString(Minecraft.getInstance().font, msg.line(), x1 + 1, y1 + 1, msg.active() ? 0xE0E0E0 : 0xB0B0B0);
 			}
 			
 			y1 += font.lineHeight;

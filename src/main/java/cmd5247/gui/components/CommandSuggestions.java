@@ -1,4 +1,4 @@
-package cmd5247.gui;
+package cmd5247.gui.components;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -46,23 +46,19 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * Copied from net.minecraft.client.gui.components.CommandSuggestions.
+ * Copied from {@link net.minecraft.client.gui.components.CommandSuggestions}.
  * Edited lines are preceeded by their originals (commented out).
  * Everything else is exactly as it appears in the original version.
- * Extension of the original is necessary so that an instance of this class can
- * be used in the
- * local command screen in place of an access transformed variable of the
- * original's type.
- * The only line needed to allow this is the call to the super constructor.
+ * Replacement is necessary so that command suggestions for the mod terminal
+ * are taken from a local version of the cmd history. A custom command terminal
+ * is needed since commands in multiplayer come from the server.
  */
 @OnlyIn(Dist.CLIENT)
-public class CommandSuggestions extends net.minecraft.client.gui.components.CommandSuggestions {
+public class CommandSuggestions {
   private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
   private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(ChatFormatting.RED);
   private static final Style LITERAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY);
-  private static final List<Style> ARGUMENT_STYLES = Stream.of(ChatFormatting.AQUA, ChatFormatting.YELLOW,
-      ChatFormatting.GREEN, ChatFormatting.LIGHT_PURPLE, ChatFormatting.GOLD).map(Style.EMPTY::withColor)
-      .collect(ImmutableList.toImmutableList());
+  private static final List<Style> ARGUMENT_STYLES = Stream.of(ChatFormatting.AQUA, ChatFormatting.YELLOW, ChatFormatting.GREEN, ChatFormatting.LIGHT_PURPLE, ChatFormatting.GOLD).map(Style.EMPTY::withColor).collect(ImmutableList.toImmutableList());
   final Minecraft minecraft;
   private final Screen screen;
   final EditBox input;
@@ -86,9 +82,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   private boolean allowSuggestions;
   boolean keepSuggestions;
 
-  public CommandSuggestions(Minecraft p_93871_, Screen p_93872_, EditBox p_93873_, Font p_93874_, boolean p_93875_,
-      boolean p_93876_, int p_93877_, int p_93878_, boolean p_93879_, int p_93880_) {
-    super(p_93871_, p_93872_, p_93873_, p_93874_, p_93875_, p_93876_, p_93877_, p_93878_, p_93879_, p_93880_);
+  public CommandSuggestions(Minecraft p_93871_, Screen p_93872_, EditBox p_93873_, Font p_93874_, boolean p_93875_, boolean p_93876_, int p_93877_, int p_93878_, boolean p_93879_, int p_93880_) {
     this.minecraft = p_93871_;
     this.screen = p_93872_;
     this.input = p_93873_;
@@ -126,7 +120,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   }
 
   public boolean mouseClicked(double p_93885_, double p_93886_, int p_93887_) {
-    return this.suggestions != null && this.suggestions.mouseClicked((int) p_93885_, (int) p_93886_, p_93887_);
+    return this.suggestions != null && this.suggestions.mouseClicked((int)p_93885_, (int)p_93886_, p_93887_);
   }
 
   public void showSuggestions(boolean p_93931_) {
@@ -135,12 +129,11 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       if (!suggestions.isEmpty()) {
         int i = 0;
 
-        for (Suggestion suggestion : suggestions.getList()) {
+        for(Suggestion suggestion : suggestions.getList()) {
           i = Math.max(i, this.font.width(suggestion.getText()));
         }
 
-        int j = Mth.clamp(this.input.getScreenX(suggestions.getRange().getStart()), 0,
-            this.input.getScreenX(0) + this.input.getInnerWidth() - i);
+        int j = Mth.clamp(this.input.getScreenX(suggestions.getRange().getStart()), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - i);
         int k = this.anchorToBottom ? this.screen.height - 12 : 72;
         this.suggestions = new CommandSuggestions.SuggestionsList(j, k, i, this.sortSuggestions(suggestions), p_93931_);
       }
@@ -159,7 +152,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     List<Suggestion> list = Lists.newArrayList();
     List<Suggestion> list1 = Lists.newArrayList();
 
-    for (Suggestion suggestion : p_93899_.getList()) {
+    for(Suggestion suggestion : p_93899_.getList()) {
       if (!suggestion.getText().startsWith(s1) && !suggestion.getText().startsWith("minecraft:" + s1)) {
         list1.add(suggestion);
       } else {
@@ -178,7 +171,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     }
 
     if (!this.keepSuggestions) {
-      this.input.setSuggestion((String) null);
+      this.input.setSuggestion((String)null);
       this.suggestions = null;
     }
 
@@ -193,12 +186,10 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     boolean flag1 = this.commandsOnly || flag;
     int i = this.input.getCursorPosition();
     if (flag1) {
-      // CommandDispatcher<SharedSuggestionProvider> commanddispatcher =
-      // this.minecraft.player.connection.getCommands();
-      CommandDispatcher<CommandSourceStack> commanddispatcher = cmd5247.CMD.instance.dispatcher;
+      //  CommandDispatcher<SharedSuggestionProvider> commanddispatcher = this.minecraft.player.connection.getCommands();
+      CommandDispatcher<CommandSourceStack> commanddispatcher = cmd5247.CMD.getInstance().commands.getDispatcher();
       if (this.currentParse == null) {
-        // this.currentParse = commanddispatcher.parse(stringreader,
-        // this.minecraft.player.connection.getSuggestionsProvider());
+        // this.currentParse = commanddispatcher.parse(stringreader, this.minecraft.player.connection.getSuggestionsProvider());
         this.currentParse = commanddispatcher.parse(stringreader, this.minecraft.player.createCommandSourceStack());
       }
 
@@ -214,8 +205,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     } else {
       String s1 = s.substring(0, i);
       int k = getLastWordIndex(s1);
-      Collection<String> collection = this.minecraft.player.connection.getSuggestionsProvider()
-          .getCustomTabSugggestions();
+      Collection<String> collection = this.minecraft.player.connection.getSuggestionsProvider().getCustomTabSugggestions();
       this.pendingSuggestions = SharedSuggestionProvider.suggest(collection, new SuggestionsBuilder(s1, k));
     }
 
@@ -227,7 +217,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     } else {
       int i = 0;
 
-      for (Matcher matcher = WHITESPACE_PATTERN.matcher(p_93913_); matcher.find(); i = matcher.end()) {
+      for(Matcher matcher = WHITESPACE_PATTERN.matcher(p_93913_); matcher.find(); i = matcher.end()) {
       }
 
       return i;
@@ -237,9 +227,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   private static FormattedCharSequence getExceptionMessage(CommandSyntaxException p_93897_) {
     Component component = ComponentUtils.fromMessage(p_93897_.getRawMessage());
     String s = p_93897_.getContext();
-    return s == null ? component.getVisualOrderText()
-        : Component.translatable("command.context.parse_error", component, p_93897_.getCursor(), s)
-            .getVisualOrderText();
+    return s == null ? component.getVisualOrderText() : Component.translatable("command.context.parse_error", component, p_93897_.getCursor(), s).getVisualOrderText();
   }
 
   private void updateUsageInfo() {
@@ -248,10 +236,8 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       if (this.pendingSuggestions.join().isEmpty() && !this.currentParse.getExceptions().isEmpty()) {
         int i = 0;
 
-        // for(Map.Entry<CommandNode<SharedSuggestionProvider>, CommandSyntaxException>
-        // entry : this.currentParse.getExceptions().entrySet()) {
-        for (Map.Entry<CommandNode<CommandSourceStack>, CommandSyntaxException> entry : this.currentParse
-            .getExceptions().entrySet()) {
+        // for(Map.Entry<CommandNode<SharedSuggestionProvider>, CommandSyntaxException> entry : this.currentParse.getExceptions().entrySet()) {
+        for(Map.Entry<CommandNode<CommandSourceStack>, CommandSyntaxException> entry : this.currentParse.getExceptions().entrySet()) {
           CommandSyntaxException commandsyntaxexception = entry.getValue();
           if (commandsyntaxexception.getType() == CommandSyntaxException.BUILT_IN_EXCEPTIONS.literalIncorrect()) {
             ++i;
@@ -261,8 +247,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
         }
 
         if (i > 0) {
-          this.commandUsage
-              .add(getExceptionMessage(CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().create()));
+          this.commandUsage.add(getExceptionMessage(CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().create()));
         }
       } else if (this.currentParse.getReader().canRead()) {
         flag = true;
@@ -283,25 +268,18 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   }
 
   private boolean fillNodeUsage(ChatFormatting p_289002_) {
-    // CommandContextBuilder<SharedSuggestionProvider> commandcontextbuilder =
-    // this.currentParse.getContext();
+    // CommandContextBuilder<SharedSuggestionProvider> commandcontextbuilder = this.currentParse.getContext();
     CommandContextBuilder<CommandSourceStack> commandcontextbuilder = this.currentParse.getContext();
-    // SuggestionContext<SharedSuggestionProvider> suggestioncontext =
-    // commandcontextbuilder.findSuggestionContext(this.input.getCursorPosition());
-    SuggestionContext<CommandSourceStack> suggestioncontext = commandcontextbuilder
-        .findSuggestionContext(this.input.getCursorPosition());
-    // Map<CommandNode<SharedSuggestionProvider>, String> map =
-    // this.minecraft.player.connection.getCommands().getSmartUsage(suggestioncontext.parent,
-    // this.minecraft.player.connection.getSuggestionsProvider());
-    Map<CommandNode<CommandSourceStack>, String> map = cmd5247.CMD.instance.dispatcher
-        .getSmartUsage(suggestioncontext.parent, this.minecraft.player.createCommandSourceStack());
+    // SuggestionContext<SharedSuggestionProvider> suggestioncontext = commandcontextbuilder.findSuggestionContext(this.input.getCursorPosition());
+    SuggestionContext<CommandSourceStack> suggestioncontext = commandcontextbuilder.findSuggestionContext(this.input.getCursorPosition());
+    // Map<CommandNode<SharedSuggestionProvider>, String> map = this.minecraft.player.connection.getCommands().getSmartUsage(suggestioncontext.parent, this.minecraft.player.connection.getSuggestionsProvider());
+    Map<CommandNode<CommandSourceStack>, String> map = cmd5247.CMD.getInstance().commands.getDispatcher().getSmartUsage(suggestioncontext.parent, this.minecraft.player.createCommandSourceStack());
     List<FormattedCharSequence> list = Lists.newArrayList();
     int i = 0;
     Style style = Style.EMPTY.withColor(p_289002_);
 
-    // for(Map.Entry<CommandNode<SharedSuggestionProvider>, String> entry :
-    // map.entrySet()) {
-    for (Map.Entry<CommandNode<CommandSourceStack>, String> entry : map.entrySet()) {
+    // for(Map.Entry<CommandNode<SharedSuggestionProvider>, String> entry : map.entrySet()) {
+    for(Map.Entry<CommandNode<CommandSourceStack>, String> entry : map.entrySet()) {
       if (!(entry.getKey() instanceof LiteralCommandNode)) {
         list.add(FormattedCharSequence.forward(entry.getValue(), style));
         i = Math.max(i, this.font.width(entry.getValue()));
@@ -310,8 +288,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
 
     if (!list.isEmpty()) {
       this.commandUsage.addAll(list);
-      this.commandUsagePosition = Mth.clamp(this.input.getScreenX(suggestioncontext.startPos), 0,
-          this.input.getScreenX(0) + this.input.getInnerWidth() - i);
+      this.commandUsagePosition = Mth.clamp(this.input.getScreenX(suggestioncontext.startPos), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - i);
       this.commandUsageWidth = i;
       return true;
     } else {
@@ -320,8 +297,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   }
 
   private FormattedCharSequence formatChat(String p_93915_, int p_93916_) {
-    return this.currentParse != null ? formatText(this.currentParse, p_93915_, p_93916_)
-        : FormattedCharSequence.forward(p_93915_, Style.EMPTY);
+    return this.currentParse != null ? formatText(this.currentParse, p_93915_, p_93916_) : FormattedCharSequence.forward(p_93915_, Style.EMPTY);
   }
 
   @Nullable
@@ -329,21 +305,16 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     return p_93929_.startsWith(p_93928_) ? p_93929_.substring(p_93928_.length()) : null;
   }
 
-  // private static FormattedCharSequence
-  // formatText(ParseResults<SharedSuggestionProvider> p_93893_, String p_93894_,
-  // int p_93895_) {
-  private static FormattedCharSequence formatText(ParseResults<CommandSourceStack> p_93893_, String p_93894_,
-      int p_93895_) {
+  // private static FormattedCharSequence formatText(ParseResults<SharedSuggestionProvider> p_93893_, String p_93894_, int p_93895_) {
+  private static FormattedCharSequence formatText(ParseResults<CommandSourceStack> p_93893_, String p_93894_, int p_93895_) {
     List<FormattedCharSequence> list = Lists.newArrayList();
     int i = 0;
     int j = -1;
-    // CommandContextBuilder<SharedSuggestionProvider> commandcontextbuilder =
-    // p_93893_.getContext().getLastChild();
+    // CommandContextBuilder<SharedSuggestionProvider> commandcontextbuilder = p_93893_.getContext().getLastChild();
     CommandContextBuilder<CommandSourceStack> commandcontextbuilder = p_93893_.getContext().getLastChild();
 
-    // for(ParsedArgument<SharedSuggestionProvider, ?> parsedargument :
-    // commandcontextbuilder.getArguments().values()) {
-    for (ParsedArgument<CommandSourceStack, ?> parsedargument : commandcontextbuilder.getArguments().values()) {
+    // for(ParsedArgument<SharedSuggestionProvider, ?> parsedargument : commandcontextbuilder.getArguments().values()) {
+    for(ParsedArgument<CommandSourceStack, ?> parsedargument : commandcontextbuilder.getArguments().values()) {
       ++j;
       if (j >= ARGUMENT_STYLES.size()) {
         j = 0;
@@ -395,10 +366,9 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   public void renderUsage(GuiGraphics p_282763_) {
     int i = 0;
 
-    for (FormattedCharSequence formattedcharsequence : this.commandUsage) {
+    for(FormattedCharSequence formattedcharsequence : this.commandUsage) {
       int j = this.anchorToBottom ? this.screen.height - 14 - 13 - 12 * i : 72 + 12 * i;
-      p_282763_.fill(this.commandUsagePosition - 1, j, this.commandUsagePosition + this.commandUsageWidth + 1, j + 12,
-          this.fillColor);
+      p_282763_.fill(this.commandUsagePosition - 1, j, this.commandUsagePosition + this.commandUsageWidth + 1, j + 12, this.fillColor);
       p_282763_.drawString(this.font, formattedcharsequence, this.commandUsagePosition, j + 2, -1);
       ++i;
     }
@@ -406,9 +376,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
   }
 
   public Component getNarrationMessage() {
-    return (Component) (this.suggestions != null
-        ? CommonComponents.NEW_LINE.copy().append(this.suggestions.getNarrationMessage())
-        : CommonComponents.EMPTY);
+    return (Component)(this.suggestions != null ? CommonComponents.NEW_LINE.copy().append(this.suggestions.getNarrationMessage()) : CommonComponents.EMPTY);
   }
 
   @OnlyIn(Dist.CLIENT)
@@ -424,11 +392,8 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
 
     SuggestionsList(int p_93957_, int p_93958_, int p_93959_, List<Suggestion> p_93960_, boolean p_93961_) {
       int i = p_93957_ - 1;
-      int j = CommandSuggestions.this.anchorToBottom
-          ? p_93958_ - 3 - Math.min(p_93960_.size(), CommandSuggestions.this.suggestionLineLimit) * 12
-          : p_93958_;
-      this.rect = new Rect2i(i, j, p_93959_ + 1,
-          Math.min(p_93960_.size(), CommandSuggestions.this.suggestionLineLimit) * 12);
+      int j = CommandSuggestions.this.anchorToBottom ? p_93958_ - 3 - Math.min(p_93960_.size(), CommandSuggestions.this.suggestionLineLimit) * 12 : p_93958_;
+      this.rect = new Rect2i(i, j, p_93959_ + 1, Math.min(p_93960_.size(), CommandSuggestions.this.suggestionLineLimit) * 12);
       this.originalContents = CommandSuggestions.this.input.getValue();
       this.lastNarratedEntry = p_93961_ ? -1 : 0;
       this.suggestionList = p_93960_;
@@ -441,31 +406,26 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       boolean flag = this.offset > 0;
       boolean flag1 = this.suggestionList.size() > this.offset + i;
       boolean flag2 = flag || flag1;
-      boolean flag3 = this.lastMouse.x != (float) p_283591_ || this.lastMouse.y != (float) p_283236_;
+      boolean flag3 = this.lastMouse.x != (float)p_283591_ || this.lastMouse.y != (float)p_283236_;
       if (flag3) {
-        this.lastMouse = new Vec2((float) p_283591_, (float) p_283236_);
+        this.lastMouse = new Vec2((float)p_283591_, (float)p_283236_);
       }
 
       if (flag2) {
-        p_282264_.fill(this.rect.getX(), this.rect.getY() - 1, this.rect.getX() + this.rect.getWidth(),
-            this.rect.getY(), CommandSuggestions.this.fillColor);
-        p_282264_.fill(this.rect.getX(), this.rect.getY() + this.rect.getHeight(),
-            this.rect.getX() + this.rect.getWidth(), this.rect.getY() + this.rect.getHeight() + 1,
-            CommandSuggestions.this.fillColor);
+        p_282264_.fill(this.rect.getX(), this.rect.getY() - 1, this.rect.getX() + this.rect.getWidth(), this.rect.getY(), CommandSuggestions.this.fillColor);
+        p_282264_.fill(this.rect.getX(), this.rect.getY() + this.rect.getHeight(), this.rect.getX() + this.rect.getWidth(), this.rect.getY() + this.rect.getHeight() + 1, CommandSuggestions.this.fillColor);
         if (flag) {
-          for (int k = 0; k < this.rect.getWidth(); ++k) {
+          for(int k = 0; k < this.rect.getWidth(); ++k) {
             if (k % 2 == 0) {
-              p_282264_.fill(this.rect.getX() + k, this.rect.getY() - 1, this.rect.getX() + k + 1, this.rect.getY(),
-                  -1);
+              p_282264_.fill(this.rect.getX() + k, this.rect.getY() - 1, this.rect.getX() + k + 1, this.rect.getY(), -1);
             }
           }
         }
 
         if (flag1) {
-          for (int i1 = 0; i1 < this.rect.getWidth(); ++i1) {
+          for(int i1 = 0; i1 < this.rect.getWidth(); ++i1) {
             if (i1 % 2 == 0) {
-              p_282264_.fill(this.rect.getX() + i1, this.rect.getY() + this.rect.getHeight(), this.rect.getX() + i1 + 1,
-                  this.rect.getY() + this.rect.getHeight() + 1, -1);
+              p_282264_.fill(this.rect.getX() + i1, this.rect.getY() + this.rect.getHeight(), this.rect.getX() + i1 + 1, this.rect.getY() + this.rect.getHeight() + 1, -1);
             }
           }
         }
@@ -473,12 +433,10 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
 
       boolean flag4 = false;
 
-      for (int l = 0; l < i; ++l) {
+      for(int l = 0; l < i; ++l) {
         Suggestion suggestion = this.suggestionList.get(l + this.offset);
-        p_282264_.fill(this.rect.getX(), this.rect.getY() + 12 * l, this.rect.getX() + this.rect.getWidth(),
-            this.rect.getY() + 12 * l + 12, CommandSuggestions.this.fillColor);
-        if (p_283591_ > this.rect.getX() && p_283591_ < this.rect.getX() + this.rect.getWidth()
-            && p_283236_ > this.rect.getY() + 12 * l && p_283236_ < this.rect.getY() + 12 * l + 12) {
+        p_282264_.fill(this.rect.getX(), this.rect.getY() + 12 * l, this.rect.getX() + this.rect.getWidth(), this.rect.getY() + 12 * l + 12, CommandSuggestions.this.fillColor);
+        if (p_283591_ > this.rect.getX() && p_283591_ < this.rect.getX() + this.rect.getWidth() && p_283236_ > this.rect.getY() + 12 * l && p_283236_ < this.rect.getY() + 12 * l + 12) {
           if (flag3) {
             this.select(l + this.offset);
           }
@@ -486,15 +444,13 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
           flag4 = true;
         }
 
-        p_282264_.drawString(CommandSuggestions.this.font, suggestion.getText(), this.rect.getX() + 1,
-            this.rect.getY() + 2 + 12 * l, l + this.offset == this.current ? -256 : -5592406);
+        p_282264_.drawString(CommandSuggestions.this.font, suggestion.getText(), this.rect.getX() + 1, this.rect.getY() + 2 + 12 * l, l + this.offset == this.current ? -256 : -5592406);
       }
 
       if (flag4) {
         Message message = this.suggestionList.get(this.current).getTooltip();
         if (message != null) {
-          p_282264_.renderTooltip(CommandSuggestions.this.font, ComponentUtils.fromMessage(message), p_283591_,
-              p_283236_);
+          p_282264_.renderTooltip(CommandSuggestions.this.font, ComponentUtils.fromMessage(message), p_283591_, p_283236_);
         }
       }
 
@@ -515,15 +471,10 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
     }
 
     public boolean mouseScrolled(double p_93972_) {
-      int i = (int) (CommandSuggestions.this.minecraft.mouseHandler.xpos()
-          * (double) CommandSuggestions.this.minecraft.getWindow().getGuiScaledWidth()
-          / (double) CommandSuggestions.this.minecraft.getWindow().getScreenWidth());
-      int j = (int) (CommandSuggestions.this.minecraft.mouseHandler.ypos()
-          * (double) CommandSuggestions.this.minecraft.getWindow().getGuiScaledHeight()
-          / (double) CommandSuggestions.this.minecraft.getWindow().getScreenHeight());
+      int i = (int)(CommandSuggestions.this.minecraft.mouseHandler.xpos() * (double)CommandSuggestions.this.minecraft.getWindow().getGuiScaledWidth() / (double)CommandSuggestions.this.minecraft.getWindow().getScreenWidth());
+      int j = (int)(CommandSuggestions.this.minecraft.mouseHandler.ypos() * (double)CommandSuggestions.this.minecraft.getWindow().getGuiScaledHeight() / (double)CommandSuggestions.this.minecraft.getWindow().getScreenHeight());
       if (this.rect.contains(i, j)) {
-        this.offset = Mth.clamp((int) ((double) this.offset - p_93972_), 0,
-            Math.max(this.suggestionList.size() - CommandSuggestions.this.suggestionLineLimit, 0));
+        this.offset = Mth.clamp((int)((double)this.offset - p_93972_), 0, Math.max(this.suggestionList.size() - CommandSuggestions.this.suggestionLineLimit, 0));
         return true;
       } else {
         return false;
@@ -559,12 +510,9 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       int i = this.offset;
       int j = this.offset + CommandSuggestions.this.suggestionLineLimit - 1;
       if (this.current < i) {
-        this.offset = Mth.clamp(this.current, 0,
-            Math.max(this.suggestionList.size() - CommandSuggestions.this.suggestionLineLimit, 0));
+        this.offset = Mth.clamp(this.current, 0, Math.max(this.suggestionList.size() - CommandSuggestions.this.suggestionLineLimit, 0));
       } else if (this.current > j) {
-        this.offset = Mth.clamp(
-            this.current + CommandSuggestions.this.lineStartOffset - CommandSuggestions.this.suggestionLineLimit, 0,
-            Math.max(this.suggestionList.size() - CommandSuggestions.this.suggestionLineLimit, 0));
+        this.offset = Mth.clamp(this.current + CommandSuggestions.this.lineStartOffset - CommandSuggestions.this.suggestionLineLimit, 0, Math.max(this.suggestionList.size() - CommandSuggestions.this.suggestionLineLimit, 0));
       }
 
     }
@@ -580,8 +528,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       }
 
       Suggestion suggestion = this.suggestionList.get(this.current);
-      CommandSuggestions.this.input.setSuggestion(CommandSuggestions.calculateSuggestionSuffix(
-          CommandSuggestions.this.input.getValue(), suggestion.apply(this.originalContents)));
+      CommandSuggestions.this.input.setSuggestion(CommandSuggestions.calculateSuggestionSuffix(CommandSuggestions.this.input.getValue(), suggestion.apply(this.originalContents)));
       if (this.lastNarratedEntry != this.current) {
         CommandSuggestions.this.minecraft.getNarrator().sayNow(this.getNarrationMessage());
       }
@@ -604,11 +551,7 @@ public class CommandSuggestions extends net.minecraft.client.gui.components.Comm
       this.lastNarratedEntry = this.current;
       Suggestion suggestion = this.suggestionList.get(this.current);
       Message message = suggestion.getTooltip();
-      return message != null
-          ? Component.translatable("narration.suggestion.tooltip", this.current + 1, this.suggestionList.size(),
-              suggestion.getText(), message)
-          : Component.translatable("narration.suggestion", this.current + 1, this.suggestionList.size(),
-              suggestion.getText());
+      return message != null ? Component.translatable("narration.suggestion.tooltip", this.current + 1, this.suggestionList.size(), suggestion.getText(), message) : Component.translatable("narration.suggestion", this.current + 1, this.suggestionList.size(), suggestion.getText());
     }
   }
 }
