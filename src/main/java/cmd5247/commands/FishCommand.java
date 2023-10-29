@@ -29,11 +29,11 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 
+import net.minecraftforge.common.Tags;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.entity.player.ItemFishedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -51,7 +51,7 @@ public class FishCommand extends AbstractTaskCommand {
 	@Override
 	public void performChecks(CommandContext<CommandSourceStack> context)
 			throws CommandSyntaxException {
-		if (!player.getInventory().contains(new ItemStack(Items.FISHING_ROD)))
+		if (!player.getInventory().contains(Tags.Items.TOOLS_FISHING_RODS))
 			throw ERROR_NO_ROD.cmd();
 	}
 	
