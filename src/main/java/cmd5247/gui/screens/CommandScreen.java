@@ -1,10 +1,10 @@
 package cmd5247.gui.screens;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.GuiMessageTag;
+// import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ChatComponent;
+// import net.minecraft.client.gui.components.ChatComponent;
 import cmd5247.CMD;
 // import net.minecraft.client.gui.components.CommandSuggestions; replace with local version
 import cmd5247.gui.components.CommandSuggestions;
@@ -72,7 +72,7 @@ public class CommandScreen extends Screen {
   }
 
   public void removed() {
-    this.minecraft.gui.getChat().resetChatScroll();
+    // this.minecraft.gui.getChat().resetChatScroll();
   }
 
   public void tick() {
@@ -100,12 +100,12 @@ public class CommandScreen extends Screen {
       } else if (p_95591_ == 264) {
         this.moveInHistory(1);
         return true;
-      } else if (p_95591_ == 266) {
-        this.minecraft.gui.getChat().scrollChat(this.minecraft.gui.getChat().getLinesPerPage() - 1);
-        return true;
-      } else if (p_95591_ == 267) {
-        this.minecraft.gui.getChat().scrollChat(-this.minecraft.gui.getChat().getLinesPerPage() + 1);
-        return true;
+      // } else if (p_95591_ == 266) {
+      //   this.minecraft.gui.getChat().scrollChat(this.minecraft.gui.getChat().getLinesPerPage() - 1);
+      //   return true;
+      // } else if (p_95591_ == 267) {
+      //   this.minecraft.gui.getChat().scrollChat(-this.minecraft.gui.getChat().getLinesPerPage() + 1);
+      //   return true;
       } else {
         return false;
       }
@@ -127,7 +127,7 @@ public class CommandScreen extends Screen {
         p_95583_ *= 7.0D;
       }
 
-      this.minecraft.gui.getChat().scrollChat((int)p_95583_);
+      // this.minecraft.gui.getChat().scrollChat((int)p_95583_);
       return true;
     }
   }
@@ -137,10 +137,10 @@ public class CommandScreen extends Screen {
       return true;
     } else {
       if (p_95587_ == 0) {
-        ChatComponent chatcomponent = this.minecraft.gui.getChat();
-        if (chatcomponent.handleChatQueueClicked(p_95585_, p_95586_)) {
-          return true;
-        }
+        // ChatComponent chatcomponent = this.minecraft.gui.getChat();
+        // if (chatcomponent.handleChatQueueClicked(p_95585_, p_95586_)) {
+        //   return true;
+        // }
 
         Style style = this.getComponentStyleAt(p_95585_, p_95586_);
         if (style != null && this.handleComponentClicked(style)) {
@@ -189,15 +189,15 @@ public class CommandScreen extends Screen {
     this.input.render(p_282470_, p_282674_, p_282014_, p_283132_);
     super.render(p_282470_, p_282674_, p_282014_, p_283132_);
     this.commandSuggestions.render(p_282470_, p_282674_, p_282014_);
-    GuiMessageTag guimessagetag = this.minecraft.gui.getChat().getMessageTagAt((double)p_282674_, (double)p_282014_);
-    if (guimessagetag != null && guimessagetag.text() != null) {
-      p_282470_.renderTooltip(this.font, this.font.split(guimessagetag.text(), 210), p_282674_, p_282014_);
-    } else {
-      Style style = this.getComponentStyleAt((double)p_282674_, (double)p_282014_);
-      if (style != null && style.getHoverEvent() != null) {
-        p_282470_.renderComponentHoverEffect(this.font, style, p_282674_, p_282014_);
-      }
-    }
+    // GuiMessageTag guimessagetag = this.minecraft.gui.getChat().getMessageTagAt((double)p_282674_, (double)p_282014_);
+    // if (guimessagetag != null && guimessagetag.text() != null) {
+    //   p_282470_.renderTooltip(this.font, this.font.split(guimessagetag.text(), 210), p_282674_, p_282014_);
+    // } else {
+    //   Style style = this.getComponentStyleAt((double)p_282674_, (double)p_282014_);
+    //   if (style != null && style.getHoverEvent() != null) {
+    //     p_282470_.renderComponentHoverEffect(this.font, style, p_282674_, p_282014_);
+    //   }
+    // }
 
   }
 
@@ -221,7 +221,8 @@ public class CommandScreen extends Screen {
 
   @Nullable
   private Style getComponentStyleAt(double p_232702_, double p_232703_) {
-    return this.minecraft.gui.getChat().getClickedComponentStyleAt(p_232702_, p_232703_);
+    // return this.minecraft.gui.getChat().getClickedComponentStyleAt(p_232702_, p_232703_);
+    return null;
   }
 
   public boolean handleChatInput(String p_242400_, boolean p_242161_) {
