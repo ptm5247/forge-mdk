@@ -2,18 +2,19 @@ package cmd5247.task;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import cmd5247.task.report.ReportManager;
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
+import cmd5247.CMD;
+import cmd5247.gui.components.TaskManagerOverlay.DebugLine;
 
-public record Task(String name, TaskEnvironment env, ReportManager reporter, BaseInstruction head) {
+public record Task(String name, @Nullable ITaskSummaries reporter, SimpleInstruction head) {
 	
-	public static Task compile(String name, BaseInstruction...instructions) {
-		Task task = new Task(name, new TaskEnvironment(), new ReportManager(), instructions[0]);
+	public static Task compile(String name, @Nullable ITaskSummaries reporter, SimpleInstruction...instructions) {
+		Task task = new Task(name, reporter, instructions[0]);
 		instructions = ArrayUtils.addAll(instructions, L(), LABEL("stop"), T(1), STOP());
 		
 		for (int i = 0; i < instructions.length; i++) {
@@ -29,87 +30,93 @@ public record Task(String name, TaskEnvironment env, ReportManager reporter, Bas
 	void start() {
 		for (var ptr = head; ptr != null; ptr = ptr.next)
 			ptr.complete = false;
-		reporter.start();
 		head.process();
 	}
 	
 	void stop() {
 		head.cancel();
-		reporter.stop();
 	}
-	
-	public static record DebugLine(String line, int indentation, boolean active) {}
-	
-	public List<DebugLine> debug() {
-		var overlay = new ArrayList<DebugLine>();
+
+  public List<DebugLine> getScript() {
+    var script = new ArrayList<DebugLine>();
 		int indentation = 0;
 		boolean prev = true;
-		var header = String.format("Task: %s - %s", name, TaskManager.getActiveElapsed());
+		var header = String.format("Task: %s - %s", name, CMD.getInstance().taskManager.getActiveElapsed());
 		
-		overlay.add(new DebugLine(header, 0, true));
+		script.add(new DebugLine(header, 0, true));
 		for (var ptr = head; ptr != null; prev = ptr.complete, ptr = ptr.next)
-			if (ptr instanceof Instructions.Indentation indent)
+			if (ptr instanceof SimpleInstruction.Indentation indent)
 				indentation += indent.distance;
 			else
-				overlay.add(new DebugLine(ptr.toString(), indentation, prev && !ptr.complete));
+				script.add(new DebugLine(ptr.toString(), indentation, prev && !ptr.complete));
 		
-		return overlay;
+		return script;
+  }
+
+  public List<DebugLine> getSummary() {
+    if (reporter != null) {
+      return reporter.summarize();
+    } else {
+      return new ArrayList<>();
+    }
+  }
+	
+	public static SimpleInstruction $(Runnable action) {
+		return new SimpleInstruction().withAction(action);
 	}
 	
-	public static BaseInstruction $(Runnable action) {
-		return new Instructions.BaseAction(action);
+	public static TickInstruction $(Supplier<Boolean> condition, Runnable action) {
+		return (TickInstruction) new TickInstruction(condition).withAction(action);
 	}
 	
-	public static BaseTickInstruction $(Predicate<PlayerTickEvent> trigger, Runnable action) {
-		return new Instructions.TickAction(trigger, action);
+	public static SimpleInstruction AFTER(int ticks, Runnable action) {
+		return $(new Util.Counter(ticks), action);
 	}
 	
-	public static BaseTickInstruction AFTER(int ticks, Runnable action) {
-		return $(new Predicates.Counter(ticks), action);
+	public static SimpleInstruction FORK(String label) {
+		return new SimpleInstruction.Fork(label);
 	}
 	
-	public static BaseInstruction FORK(String label) {
-		return new Instructions.Fork(label);
+	public static SimpleInstruction GOTO(String label, Supplier<Boolean> condition) {
+		return new TickInstruction.Goto(label, condition);
 	}
 	
-	public static BaseInstruction GOTO(String label, Predicate<PlayerTickEvent> condition) {
-		return new Instructions.Goto(label, condition);
+	public static SimpleInstruction L() {
+		return new SimpleInstruction.LineBreak();
 	}
 	
-	public static BaseInstruction L() {
-		return new Instructions.LineBreak();
+	public static SimpleInstruction LABEL(String label) {
+		return new SimpleInstruction.Label(label);
 	}
 	
-	public static BaseInstruction LABEL(String label) {
-		return new Instructions.Label(label);
+	public static SimpleInstruction LOOP(String label) {
+		return LOOP(label, Util.NOW);
 	}
 	
-	public static BaseInstruction LOOP(String label) {
-		return LOOP(label, Predicates.NOW);
+	public static SimpleInstruction LOOP(String label, Supplier<Boolean> condition) {
+		return new TickInstruction.Loop(label, condition);
 	}
 	
-	public static BaseInstruction LOOP(String label, Predicate<PlayerTickEvent> condition) {
-		return new Instructions.Loop(label, condition);
-	}
-	
-	public static BaseInstruction NOOP() {
+	public static SimpleInstruction NOOP() {
 		return $(() -> {});
 	}
 	
-	private static BaseInstruction STOP() {
-		return new Instructions.Stop();
+	private static SimpleInstruction STOP() {
+		return new SimpleInstruction.Stop();
 	}
 	
-	public static BaseInstruction T(int distance) {
-		return new Instructions.Indentation(distance);
+	public static SimpleInstruction T(int distance) {
+		return new SimpleInstruction.Indentation(distance);
 	}
 	
-	public static BaseInstruction TRY(int ticks, BaseTickInstruction tryInstruction) {
-		return new Instructions.Try(ticks, tryInstruction, NOOP());
+	public static SimpleInstruction TRY(int ticks, TickInstruction tryInstruction) {
+		return new TickInstruction.Try(ticks, tryInstruction, NOOP());
 	}
 	
-	public static BaseInstruction WATCH(Supplier<Object> target, Runnable action) {
-		return $(new Predicates.Observer(target), action); 
+	public static <T> SimpleInstruction WATCH(Supplier<T> target, Runnable action) {
+		return $(new Util.Observer<T>(target), action); 
 	}
+
+
 	
 }

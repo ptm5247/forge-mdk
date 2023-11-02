@@ -1,90 +1,81 @@
 package cmd5247.task;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.Consumer;
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-
-import cmd5247.CMD;
-import cmd5247.ModException;
+import cmd5247.gui.components.TaskManagerOverlay;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.network.chat.Component;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent.Phase;
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
-import net.minecraftforge.fml.LogicalSide;
 
 public class TaskManager {
 	
-	private static final String BUSY_MSG = "Task \"%s\" is already running! Stop it with $stop";
-	private static ArrayList<Consumer<PlayerTickEvent>> listeners = new ArrayList<>();
-	private static Optional<Task> activeTask = Optional.empty();
-	private static long activeStart;
+	private Optional<Task> activeTask = Optional.empty();
+	private long activeStart;
+  private List<TickInstruction> listeners = new ArrayList<>();
+
+  public void onRegisterGuiOverlaysEvent(RegisterGuiOverlaysEvent event) {
+    event.registerAbove(VanillaGuiOverlay.DEBUG_TEXT.id(), "task_manager", new TaskManagerOverlay());
+  }
+
+  public boolean isBusy() {
+    return activeTask.isPresent();
+  }
+
+  public Task getAactiveTask() throws NoSuchElementException {
+    return activeTask.get();
+  }
+
+  public void register(TickInstruction listener) {
+    listeners.add(listener);
+  }
+
+  public void unregister(TickInstruction listener) {
+    listeners.remove(listener);
+  }
+
+  public void tick() {
+    for (TickInstruction instruction : listeners) instruction.tick();
+  }
 	
-	/** To be called during FMLClientSetupEvent. */
-	public static void clientSetup() {
-		MinecraftForge.EVENT_BUS.addListener(TaskManager::forwardTickEvent);
-	}
-	
-	public static void push(String str) {
-		Minecraft.getInstance().getProfiler().push(CMD.MODID);
-		Minecraft.getInstance().getProfiler().push(str);
-	}
-	
-	public static void pop() {
-		Minecraft.getInstance().getProfiler().pop();
-		Minecraft.getInstance().getProfiler().pop();
-	}
-	
-	/** Register a TickInstruction to receive PlayerTickEvents. */
-	static void register(Consumer<PlayerTickEvent> listener) {
-		listeners.add(listener);
-	}
-	
-	/** Forwards the hooked PlayerTickEvent to all of the registered listeners. */
-	public static void forwardTickEvent(PlayerTickEvent event) {
-		if (activeTask.isEmpty()) return;
-		
-		if (event.side != LogicalSide.CLIENT || event.phase != Phase.END) return;
-		
-		push("task instructions");
-		
-		int i = 0;
-		while (i < listeners.size()) {
-			int prevSize = listeners.size();
-			listeners.get(i).accept(event);
-			if (prevSize == listeners.size()) i += 1;
-		}
-		
-		pop();
-	}
-	
-	/** Unregister a TickInstruction from receiving PlayerTickEvents. */
-	static void unregister(Consumer<PlayerTickEvent> listener) {
-		listeners.remove(listener);
-	}
-	
-	/** Starts the given task to active and throws a CommandSyntaxException if busy. */
-	public static void start(Task task) throws CommandSyntaxException {
+	/** Starts the given task to active and throws a CommandRuntimeException if busy. */
+	public void start(Task task) throws CommandRuntimeException {
 		if (activeTask.isEmpty()) {
 			activeTask = Optional.of(task);
 			activeStart = System.currentTimeMillis();
+      task.reporter().reset();
+      MinecraftForge.EVENT_BUS.register(task.reporter());
 			task.start();
-		} else throw new ModException(String.format(BUSY_MSG, activeTask.get().name())).cmd();
+		} else {
+      var message = String.format("Task \"%s\" is already running! Stop it with $stop", activeTask.get().name());
+      throw new CommandRuntimeException(Component.literal(message).withStyle(ChatFormatting.RED));
+    }
 	}
 	
-	/** Stops the currently active task. This will cause an error if no tasks are active. */
-	public static void stopActiveTask() {
-		activeTask.get().stop();
-		activeTask = Optional.empty();
+	/** Stops the currently active task, if any. */
+  @SuppressWarnings("resource")
+	public void stopActiveTask() throws CommandRuntimeException {
+    if (activeTask.isEmpty()) {
+      var message = "No task to stop.";
+      throw new CommandRuntimeException(Component.literal(message).withStyle(ChatFormatting.RED));
+    } else {
+      var message = String.format("Stopping task \"%s\"", activeTask.get().name());
+      Minecraft.getInstance().player.sendSystemMessage(Component.literal(message));
+      activeTask.get().stop();
+      MinecraftForge.EVENT_BUS.unregister(activeTask.get().reporter());
+      Minecraft.getInstance().player.sendSystemMessage(activeTask.get().reporter().report());
+		  activeTask = Optional.empty();
+      listeners.clear();
+    }
 	}
 	
-	public static Optional<Task> getActiveTask() {
-		return activeTask;
-	}
-	
-	public static String getActiveElapsed() {
+	public String getActiveElapsed() {
 		long millis = System.currentTimeMillis() - activeStart;
 		
 		int h = (int) (millis / 3600e3);
@@ -95,10 +86,9 @@ public class TaskManager {
 		millis %= 1e3;
 		int t = (int) (millis / 100);
 		
-		if (h == 0 && m == 0) return String.format("%02d.%d", s, t);
-		if (h == 0)	return String.format("%02d:%02d.%d", m, s, t);
-		else return String.format("%02d:%02d:%02d.%d", h, m, s, t);
-			
+		if (h == 0 && m == 0) return String.format("%d.%d", s, t);
+		if (h == 0)	return String.format("%d:%02d.%d", m, s, t);
+		else return String.format("%d:%02d:%02d.%d", h, m, s, t);
 	}
 	
 }

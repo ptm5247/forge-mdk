@@ -1,24 +1,37 @@
 package cmd5247.task;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 
-class Predicates {
+public class Util {
+
+  public static final KeyMapping
+		USE = Minecraft.getInstance().options.keyUse,
+		UP = Minecraft.getInstance().options.keyUp,
+		DOWN = Minecraft.getInstance().options.keyDown;
 	
-	static interface RequiresReset {
-		
-		void reset();
-		
+	public static Runnable click(KeyMapping key) {
+		return () -> KeyMapping.click(key.getKey());
 	}
 	
-	static final Predicate<PlayerTickEvent> NOW = e -> true;
-	static final Predicate<PlayerTickEvent> NEVER = e -> false;
+	public static Runnable press(KeyMapping key) {
+		return () -> key.setDown(true);
+	}
 	
-	/** Accepts a tick event after a certain number of tests. */
-	static class Counter implements Predicate<PlayerTickEvent>, RequiresReset {
+	public static Runnable release(KeyMapping key) {
+		return () -> key.setDown(false);
+  }
+
+  @FunctionalInterface static interface RequiresReset { void reset(); }
+	
+	static final Supplier<Boolean> NOW = () -> true;
+	static final Supplier<Boolean> NEVER = () -> false;
+	
+	/** Returns true after a certain number of tests. */
+	static class Counter implements Supplier<Boolean>, RequiresReset {
 		
 		private final int reset;
 		private int count;
@@ -36,7 +49,7 @@ class Predicates {
 		}
 		
 		@Override
-		public boolean test(PlayerTickEvent event) {
+		public Boolean get() {
 			count = Integer.max(0, count - 1);
 			return count == 0;
 		}
@@ -52,13 +65,13 @@ class Predicates {
 	 * Stores the first value supplied by the supplier,
 	 * and accepts a tick event once a subsequent call supplies a different value.
 	 */
-	static class Observer implements Predicate<PlayerTickEvent>, RequiresReset {
+	static class Observer<T> implements Supplier<Boolean>, RequiresReset {
 		
-		private Optional<?> initial = Optional.empty();
-		private Supplier<?> target;
+		private Optional<T> initial = Optional.empty();
+		private Supplier<T> target;
 		private String observedType = "Unknown";
 		
-		Observer(Supplier<?> target) {
+		Observer(Supplier<T> target) {
 			this.target = target;
 		}
 		
@@ -68,7 +81,7 @@ class Predicates {
 		}
 		
 		@Override
-		public boolean test(PlayerTickEvent event) {
+		public Boolean get() {
 			if (initial.isEmpty()) {
 				initial = Optional.of(target.get());
 				observedType = initial.get().getClass().getSimpleName();
@@ -82,5 +95,5 @@ class Predicates {
 		}
 		
 	}
-
+  
 }
