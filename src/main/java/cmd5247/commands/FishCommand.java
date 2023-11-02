@@ -26,11 +26,11 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 
-import net.minecraftforge.common.Tags;
 import net.minecraftforge.event.entity.player.ItemFishedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -43,11 +43,13 @@ class FishCommand extends AbstractTaskCommand {
 	
 	@Override
 	void performChecks(CommandContext<CommandSourceStack> context) throws CommandRuntimeException {
-		if (!player.getInventory().contains(Tags.Items.TOOLS_FISHING_RODS))
-      throw new CommandRuntimeException(
-        Component.literal("You must have a fishing rod in your inventory to use this command!")
-                 .withStyle(ChatFormatting.RED)
-      );
+    for (int i = 0; i < Inventory.INVENTORY_SIZE; i++) {
+      if (player.getInventory().getItem(i).is(Items.FISHING_ROD)) return;
+    }
+    throw new CommandRuntimeException(
+      Component.literal("You must have a fishing rod in your inventory to use this command!")
+               .withStyle(ChatFormatting.RED)
+    );
 	}
 	
 	/**
