@@ -27,6 +27,7 @@ public class Commands {
     this.dispatcher = new CommandDispatcher<>();
     FishCommand.register(this.dispatcher);
     StopCommand.register(this.dispatcher);
+    ClickCommand.register(this.dispatcher);
   }
 
   public CommandDispatcher<CommandSourceStack> getDispatcher() {

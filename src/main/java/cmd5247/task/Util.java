@@ -10,6 +10,7 @@ public class Util {
 
   public static final KeyMapping
 		USE = Minecraft.getInstance().options.keyUse,
+    ATTACK = Minecraft.getInstance().options.keyAttack,
 		UP = Minecraft.getInstance().options.keyUp,
 		DOWN = Minecraft.getInstance().options.keyDown;
 	

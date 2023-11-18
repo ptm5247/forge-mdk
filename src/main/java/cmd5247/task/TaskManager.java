@@ -49,8 +49,10 @@ public class TaskManager {
 		if (activeTask.isEmpty()) {
 			activeTask = Optional.of(task);
 			activeStart = System.currentTimeMillis();
-      task.reporter().reset();
-      MinecraftForge.EVENT_BUS.register(task.reporter());
+      if (task.reporter() != null) {
+        task.reporter().reset();
+        MinecraftForge.EVENT_BUS.register(task.reporter());
+      }
 			task.start();
 		} else {
       var message = String.format("Task \"%s\" is already running! Stop it with $stop", activeTask.get().name());
@@ -68,8 +70,10 @@ public class TaskManager {
       var message = String.format("Stopping task \"%s\"", activeTask.get().name());
       Minecraft.getInstance().player.sendSystemMessage(Component.literal(message));
       activeTask.get().stop();
-      MinecraftForge.EVENT_BUS.unregister(activeTask.get().reporter());
-      Minecraft.getInstance().player.sendSystemMessage(activeTask.get().reporter().report());
+      if (activeTask.get().reporter() != null) {
+        MinecraftForge.EVENT_BUS.unregister(activeTask.get().reporter());
+        Minecraft.getInstance().player.sendSystemMessage(activeTask.get().reporter().report());
+      }
 		  activeTask = Optional.empty();
       listeners.clear();
     }
